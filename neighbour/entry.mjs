@@ -1,3 +1,11 @@
-// The public Pages site is an entry only. No tokens, proxy, iframe or API calls.
-// Never accept a destination from the query string or hash.
-window.location.replace('https://neighbour-yuenhk-live.onrender.com/')
+// Fixed automatic entry; paint the lightweight welcome before navigation.
+// No credentials, API requests, third-party scripts or query-string destination.
+let moving = false
+const go = () => {
+  if (moving) return
+  moving = true
+  window.location.replace('https://neighbour-yuenhk-live.onrender.com/')
+}
+requestAnimationFrame(() => requestAnimationFrame(go))
+// Background tabs can pause animation frames. Keep automatic navigation bounded.
+setTimeout(go, 120)
