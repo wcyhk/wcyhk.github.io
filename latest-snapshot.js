@@ -2,14 +2,14 @@ export const latestSnapshot = [
   {
     "name": "wcyhk.github.io",
     "created_at": "2026-11-02T03:05:12Z",
-    "homepage": "https://wcy.hk/QingMing-Hand-Treasure/",
+    "homepage": "https://wcy.hk/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "Compatibility redirects for the renamed QingMing-Hand-Treasure game and existing QR codes.",
-    "language": "HTML",
+    "description": "WCY.HK STUDIO 個人作品網站｜集中展示原創遊戲、互動教具與創作工具，連接試用入口、YouTube 影片及 GitHub 程式碼，並保留舊網址轉址。",
+    "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
     }
@@ -62,7 +62,7 @@ export const latestSnapshot = [
   {
     "name": "ShapeCut",
     "created_at": "2026-08-04T09:31:25Z",
-    "homepage": "",
+    "homepage": "https://wcy.hk/ShapeCut/",
     "has_pages": true,
     "private": false,
     "fork": false,
@@ -77,13 +77,13 @@ export const latestSnapshot = [
   {
     "name": "Tic-Tac-Toe",
     "created_at": "2026-05-07T15:58:30Z",
-    "homepage": null,
+    "homepage": "https://wcy.hk/Tic-Tac-Toe/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": null,
+    "description": "過三關：戰鬥幻境｜可自訂棋盤與連線規則，支援封印佈局、回合倒數、同機雙人及電腦對戰的策略遊戲。",
     "language": "HTML",
     "owner": {
       "login": "wcyhk"
@@ -92,13 +92,13 @@ export const latestSnapshot = [
   {
     "name": "Terminal-Countdown",
     "created_at": "2026-04-29T05:04:18Z",
-    "homepage": null,
+    "homepage": "https://wcy.hk/Terminal-Countdown/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": null,
+    "description": "倒數計：終極核爆版｜結合倒數計時、音效與動態視覺特效，適合課堂挑戰、限時任務及活動使用的網頁工具。",
     "language": "HTML",
     "owner": {
       "login": "wcyhk"
@@ -122,13 +122,13 @@ export const latestSnapshot = [
   {
     "name": "Exploring-interior-angles-of-triangles",
     "created_at": "2026-02-12T05:16:08Z",
-    "homepage": null,
+    "homepage": "https://wcy.hk/Exploring-interior-angles-of-triangles/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": null,
+    "description": "三角形內角探索｜透過拖曳頂點、即時角度顯示與視覺化操作，引導學生探索三角形內角和的互動數學教具。",
     "language": "HTML",
     "owner": {
       "login": "wcyhk"
@@ -137,13 +137,13 @@ export const latestSnapshot = [
   {
     "name": "Escape-From-Space-Oil",
     "created_at": "2025-03-25T09:32:44Z",
-    "homepage": null,
+    "homepage": "https://wcy.hk/Escape-From-Space-Oil/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": null,
+    "description": "逃離太凶油｜以 Scratch 製作的禁毒教育跑酷遊戲，透過跳躍、閃避障礙與闖關，讓學生在遊玩中認識拒絕毒品的重要。",
     "language": "HTML",
     "owner": {
       "login": "wcyhk"
@@ -152,13 +152,13 @@ export const latestSnapshot = [
   {
     "name": "Tanaka",
     "created_at": "2020-02-02T17:15:22Z",
-    "homepage": "",
+    "homepage": "https://wcy.hk/Tanaka/",
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "Maintenance Recording System",
+    "description": "Tanaka 維修記錄系統｜集中回報校園或機構的維修事項，支援管理員跟進處理進度、雲端保存記錄及 Excel 匯出。",
     "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
@@ -173,7 +173,7 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "a Web App Project of Plants Analysis",
+    "description": "Wild Doctor 野外植物探索｜以照片辨識植物並查閱相關資料的早期網頁實驗，結合影像辨識 API、植物資訊與網頁介面。",
     "language": "HTML",
     "owner": {
       "login": "wcyhk"
