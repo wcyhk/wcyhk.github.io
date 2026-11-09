@@ -1,4 +1,4 @@
-export const channel='https://www.youtube.com/@wcy-hk';
+export const channel='https://www.youtube.com/@wcy_hk';
 export const projects=[
 {id:'bayblad',posterImage:'assets/bayblad-poster-v2.webp',repo:'Bayblad-Simulator',title:'陀螺競技場',english:'BAYBLAD SIMULATOR',category:'games',categoryName:'競技 × STEAM',label:'焦點作品',tagline:'由你設計，為你而戰。',description:'從三層陀螺設計出發，調整造型、觀察重量與重心，再走進線上競技場，與真人或電腦玩家一決高下。把設計思考，變成一場有聲有色的 STEAM 冒險。',features:['參數化陀螺設計與 3D 預覽','房間對戰、觀賽與節拍發射','匯出 STL，連接實體製作'],url:'https://wcy.hk/Bayblad-Simulator/',video:null,accent:'#8cdbde',note:'完整對戰及紀錄由現有雲端服務提供；首次連線可能需要等候。'},
 {id:'qingming',posterImage:'assets/qingming-poster-v2.webp',repo:'QingMing-Hand-Treasure',title:'揮手鑑古',english:'QINGMING · HAND TREASURE',category:'games',categoryName:'手勢 × 古畫探索',label:'焦點作品',tagline:'揮一揮手，走進千年風景。',description:'以清院本《清明上河圖》為舞台，用手掌揮開迷霧，與家人一起尋找古畫中的寶物。鏡頭手勢、廣東話講解與雙人探索，讓一幅畫變成可以走進去的世界。',features:['鏡頭手勢辨識與雙人探索','五關尋寶與廣東話講解','影像在瀏覽器處理，不上傳'],url:'https://wcy.hk/QingMing-Hand-Treasure/',video:null,accent:'#b7d3a5',note:'建議使用電腦版 Chrome／Edge 及鏡頭；亦提供滑鼠輔助。'},
