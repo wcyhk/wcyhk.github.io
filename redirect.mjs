@@ -7,7 +7,7 @@ export function destinationFor(href) {
   if (path === '/') suffix = '/';
   else if (path.toLowerCase() === prefix || path.toLowerCase().startsWith(prefix + '/')) suffix = path.slice(prefix.length) || '/';
   else return null;
-  const target = new URL('https://yuenhk.github.io/QingMing-Hand-Treasure' + suffix);
+  const target = new URL('https://wcy.hk/QingMing-Hand-Treasure' + suffix);
   target.search = current.search;
   target.hash = current.hash;
   return target.href === current.href ? null : target.href;
