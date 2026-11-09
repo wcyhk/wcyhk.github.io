@@ -7,7 +7,7 @@ export function selectPublicRepositories(repositories) {
  const unique = new Map();
  for (const repo of repositories) {
   if (!repo || typeof repo.name !== 'string' || !/^[A-Za-z0-9_.-]+$/.test(repo.name)) continue;
-  if ((typeof repo.owner?.login !== 'string' || repo.owner.login.toLowerCase() !== OWNER.toLowerCase()) || repo.private || repo.fork || repo.disabled || repo.name.toLowerCase() === OWNER.toLowerCase()) continue;
+  if ((typeof repo.owner?.login !== 'string' || repo.owner.login.toLowerCase() !== OWNER.toLowerCase()) || repo.private || repo.fork || repo.disabled || excludedNames.has(repo.name.toLowerCase())) continue;
   if (typeof repo.created_at !== 'string' || !Number.isFinite(Date.parse(repo.created_at))) continue;
   unique.set(repo.name.toLowerCase(), repo);
  }
