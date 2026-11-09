@@ -15,7 +15,7 @@ export const latestSnapshot = [
     }
   },
   {
-    "name": "neighbour-cloud",
+    "name": "Neighbour-Cloud",
     "created_at": "2026-10-30T04:19:20Z",
     "homepage": null,
     "has_pages": false,
@@ -83,8 +83,8 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "過三關：戰鬥幻境｜可自訂棋盤與連線規則，支援封印佈局、回合倒數、同機雙人及電腦對戰的策略遊戲。",
-    "language": "HTML",
+    "description": "過三關：戰鬥幻境｜原創日系動漫角色回合攻防，保留落子連線核心；支援單人 AI、同機雙人、3–10 格棋盤、自訂連線目標、手動障礙及回合計時。",
+    "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
     }
@@ -98,8 +98,8 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "倒數計：終極核爆版｜結合倒數計時、音效與動態視覺特效，適合課堂挑戰、限時任務及活動使用的網頁工具。",
-    "language": "HTML",
+    "description": "終極倒數｜日系動漫任務風格的課堂與活動計時器，支援暫停、繼續、扣除 30 秒、自訂時限、三種主題及自選音效；按實際經過時間計算。",
+    "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
     }
@@ -128,8 +128,8 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "三角形內角探索｜透過拖曳頂點、即時角度顯示與視覺化操作，引導學生探索三角形內角和的互動數學教具。",
-    "language": "HTML",
+    "description": "三角形內角探索｜日系動漫研究室風格的互動數學教具，拖曳或用鍵盤移動頂點，以八步角度拼圖探索內角和 180°，支援隱藏答案挑戰。",
+    "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
     }
@@ -158,7 +158,7 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "Tanaka 維修記錄系統｜集中回報校園或機構的維修事項，支援管理員跟進處理進度、雲端保存記錄及 Excel 匯出。",
+    "description": "Tanaka 維修管理｜通用機構／校園工具，按地點實際設施篩選維修問題；一般 Google 用戶可回報及查看紀錄，管理員管理地點、分類、處理進度與 CSV 匯出。",
     "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
@@ -173,8 +173,8 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "Wild Doctor 野外植物探索｜以照片辨識植物並查閱相關資料的早期網頁實驗，結合影像辨識 API、植物資訊與網頁介面。",
-    "language": "HTML",
+    "description": "Wild Doctor 野外植物探索｜全新手機拍照與相片預覽網頁，透過後端連接百度植物識別，不保存相片。辨識啟用仍待百度實名認證及可用額度。",
+    "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
     }
