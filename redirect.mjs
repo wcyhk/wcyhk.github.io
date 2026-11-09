@@ -1,6 +1,14 @@
 // Keep printed lowercase QR codes working after the game repository was renamed.
 export function destinationFor(href) {
   const current = new URL(href);
+  const wildPrefix = '/wild-doctor';
+  if (current.pathname.toLowerCase() === wildPrefix || current.pathname.toLowerCase().startsWith(wildPrefix + '/')) {
+    const suffix = current.pathname.slice(wildPrefix.length) || '/';
+    const target = new URL('https://wild-doctor-wcyhk.onrender.com' + suffix);
+    target.search = current.search;
+    target.hash = current.hash;
+    return target.href;
+  }
   const prefix = '/qingming-hand-treasure';
   const path = current.pathname;
   let suffix;
