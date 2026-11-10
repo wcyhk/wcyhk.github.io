@@ -55,6 +55,8 @@ if (root) {
       // On a phone, scrolling the page stays available until Explore is explicitly enabled.
       canvas.style.touchAction = mobile.matches ? 'pan-y' : 'none';
       const original = () => {
+        // Drain pending orbit/zoom damping before restoring a stable view.
+        const damping = controls.enableDamping; controls.enableDamping = false; controls.update(); controls.enableDamping = damping;
         camera.position.set(mobile.matches ? 0 : .5, mobile.matches ? 1.4 : 1.7, mobile.matches ? 14.5 : 12.8);
         controls.target.set(0, mobile.matches ? .25 : .2, 0); controls.update();
       };
@@ -81,7 +83,7 @@ if (root) {
         transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
         uniforms:{uPulse:{value:0},uTime:{value:0}},
         vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-        fragmentShader:`varying vec2 vUv;uniform float uPulse;uniform float uTime;void main(){vec2 p=vUv-.5;float r=length(p);float a=atan(p.y,p.x);float edge=exp(-abs(r-.174)*105.)*.8;float mist=exp(-abs(r-.178)*20.)*.13;float rays=(.6+.4*sin(a*71.+sin(a*9.)*4.+uTime*.05))*exp(-abs(r-.18)*24.)*.08;float mask=smoothstep(.166,.173,r);vec3 col=mix(vec3(.34,.53,.72),vec3(1.,.58,.21),smoothstep(-.4,.5,p.x));gl_FragColor=vec4(col*(edge+mist+rays)*(1.+uPulse*2.5)*mask,1.);}`
+        fragmentShader:`varying vec2 vUv;uniform float uPulse;uniform float uTime;void main(){vec2 p=vUv-.5;float r=length(p);float a=atan(p.y,p.x);float edge=exp(-abs(r-.174)*105.)*.8;float mist=exp(-abs(r-.178)*20.)*.13;float rays=(.6+.4*sin(a*71.+sin(a*9.)*4.+uTime*.05))*exp(-abs(r-.18)*24.)*.08;float mask=smoothstep(.166,.173,r);vec3 col=mix(vec3(.34,.53,.72),vec3(1.,.58,.21),smoothstep(-.4,.5,p.x));float intensity=(edge+mist+rays)*mask;gl_FragColor=vec4(col*(1.+uPulse*2.5),clamp(intensity,0.,1.));}`
       })); halo.position.z=-.02; sculpture.add(halo);
       const orbitRings=[];
       const ringDefs=[{r:2.02,t:.024,rot:[.6,.28,.2]},{r:2.65,t:.04,rot:[.32,-.6,-.35]},{r:3.12,t:.012,rot:[1.0,.2,.55]}];
@@ -103,7 +105,7 @@ if (root) {
         sculpture.add(g); orbitRings.push(g);
       });
       // Monumental clock hands, suspended rather than attached to an ordinary dial.
-      const hands=new THREE.Group();hands.position.z=.08;
+      const hands=new THREE.Group();hands.position.z=1.38;
       const hand1=new THREE.Mesh(new THREE.ConeGeometry(.055,1.4,4),pale);hand1.position.y=.9;hands.add(hand1);
       const hand2=new THREE.Mesh(new THREE.ConeGeometry(.04,.9,4),bronze);hand2.position.set(-.45,0,0);hand2.rotation.z=Math.PI/2;hands.add(hand2);
       const axle=new THREE.Mesh(new THREE.OctahedronGeometry(.09),glowMat);hands.add(axle);sculpture.add(hands);
@@ -116,7 +118,7 @@ if (root) {
       }
       dustGeo.setAttribute('position',new THREE.BufferAttribute(placeholder,3));dustGeo.setAttribute('aParams',new THREE.BufferAttribute(params,3));dustGeo.setAttribute('aColor',new THREE.BufferAttribute(colors,3));dustGeo.setAttribute('aSize',new THREE.BufferAttribute(sizes,1));
       const dustMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uTime:{value:0},uPulse:{value:0},uRatio:{value:1}},
-        vertexShader:`attribute vec3 aParams;attribute vec3 aColor;attribute float aSize;uniform float uTime;uniform float uPulse;uniform float uRatio;varying vec3 vColor;varying float vAlpha;void main(){float r=aParams.x+uPulse*.32;float a=aParams.y+uTime*.085/(r*r);vec3 p=vec3(cos(a)*r,aParams.z,sin(a)*r);vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(aSize*uRatio*14./-mv.z,.5,5.);vColor=aColor;vAlpha=(.4+.6*pow(sin(aParams.y*7.+uTime*.13),2.))*(1.+uPulse);}`,
+        vertexShader:`attribute vec3 aParams;attribute vec3 aColor;attribute float aSize;uniform float uTime;uniform float uPulse;uniform float uRatio;varying vec3 vColor;varying float vAlpha;void main(){float r=aParams.x+uPulse*.32;float a=aParams.y+uTime*.085/(r*r);vec3 p=vec3(cos(a)*r,aParams.z,sin(a)*r);vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(aSize*uRatio*14./-mv.z,.5,5.);vColor=aColor;float twinkle=sin(aParams.y*7.+uTime*.13);vAlpha=(.4+.6*twinkle*twinkle)*(1.+uPulse);}`,
         fragmentShader:`varying vec3 vColor;varying float vAlpha;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;float a=pow(1.-d*2.,1.6);gl_FragColor=vec4(vColor*1.5,a*vAlpha);}`
       });
       const dust=new THREE.Points(dustGeo,dustMat);dust.rotation.set(.34,.05,-.22);dust.frustumCulled=false;scene.add(dust);
