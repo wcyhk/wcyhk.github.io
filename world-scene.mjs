@@ -1,7 +1,7 @@
-import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=slow-sanctuary-20261110';
+import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=fiend-finale-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createIslandDestruction} from './world-destruction.mjs?v=slow-sanctuary-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=slow-sanctuary-20261110';
+import {createIslandDestruction} from './world-destruction.mjs?v=fiend-finale-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=fiend-finale-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}

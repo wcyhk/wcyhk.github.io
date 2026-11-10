@@ -1,5 +1,5 @@
-import {seededRandom,sphereHitsIsland,materializationState} from './world-model.mjs?v=slow-sanctuary-20261110';
-import {createManifestation} from './world-reveal.mjs?v=slow-sanctuary-20261110';
+import {seededRandom,sphereHitsIsland,materializationState} from './world-model.mjs?v=fiend-finale-20261110';
+import {createManifestation} from './world-reveal.mjs?v=fiend-finale-20261110';
 
 export function createIslandDestruction(THREE,scene,islands,stone){
   const random=seededRandom(841),dummy=new THREE.Object3D(),fragmentGeometry=new THREE.IcosahedronGeometry(1,0),records=[];

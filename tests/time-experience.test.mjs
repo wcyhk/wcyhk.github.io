@@ -137,11 +137,8 @@ test('The shared processional path clears every beacon foundation in both worlds
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera());const blocks=world.stairs.children.filter(o=>o.geometry===world.stairs.children[0].geometry);assert.equal(blocks.length,19);blocks.forEach((o,i)=>{const p=processionalStep(i);assert.equal(o.position.x,p.x);assert.equal(o.position.z,p.z);});world.dispose();
 });
 
-test('Awakening holds a solid near eye-level view, then gently pulls back to a half-overhead view',()=>{
-  for(const phone of [false,true]){const pos=phone?[0,7.4,26]:[1.5,6.9,18],target=[0,1.2,-1.8],keys=awakeningCameraKeys(pos,target,phone);assert.deepEqual(keys[0].position,pos);assert.notEqual(keys[0].position,pos);
-    const distance=k=>Math.hypot(...k.position.map((v,i)=>v-k.target[i])),near=keys[1],end=keys.at(-1);assert.ok(distance(near)<distance(keys[0]));assert.ok(near.position[1]-near.target[1]<2.1);assert.ok(Math.atan2(end.position[1]-end.target[1],Math.hypot(end.position[0]-end.target[0],end.position[2]-end.target[2]))>.5);
-    for(let i=1;i<keys.length;i++){assert.ok(keys[i].at>keys[i-1].at);assert.ok(distance(keys[i])>=10&&distance(keys[i])<40);if(i>1){assert.ok(distance(keys[i])>=distance(keys[i-1]));assert.ok(keys[i].position[1]>=keys[i-1].position[1]);}}assert.equal(end.at,26);assert.deepEqual(keys[1].position,keys[2].position);assert.ok(keys[2].at-keys[1].at>=7);
-  }
+test('Awakening pulls out for the siege, waits until all enemies clear, then returns to the reference framing',()=>{
+  for(const phone of [false,true]){const start=phone?[0,7.4,26]:[1.5,6.9,18],keys=awakeningCameraKeys(start,[0,1.2,-1.8],phone),distance=k=>Math.hypot(...k.position.map((v,i)=>v-k.target[i]));assert.deepEqual(keys[0].position,start);assert.ok(distance(keys[1])>distance(keys[0]));assert.deepEqual(keys[1].position,keys[2].position);assert.ok(keys[2].at>=14);assert.ok(distance(keys[3])<distance(keys[2]));assert.deepEqual(keys[3].position,phone?[0,7,26]:[.6,6.4,18.5]);assert.equal(keys[3].at,REBIRTH_DURATION);for(let i=1;i<keys.length;i++){assert.ok(keys[i].at>keys[i-1].at);assert.ok(distance(keys[i])<40);}}
 });
 
 test('The dragon reaches the front line before either layout triggers the altar guard',()=>{
@@ -173,6 +170,16 @@ test('Every palace is fully solid before the eye-level hold ends, including imme
   for(const aspect of [1.2,.48])for(const siege of [0,19,26]){const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));w.update(0,1,0,.05,7,11,siege);assert.ok(w.reborn.palaces.every(p=>p.manifest.materials.every(m=>m.opacity===1&&m.depthWrite)));w.dispose();}
 });
 
-test('The frontal swarm stays above the initial and close camera corridors',()=>{
-  for(const siege of [0,19,26])for(const phone of [false,true]){const keys=awakeningCameraKeys(phone?[0,7.4,26]:[1.5,6.9,18],[0,1.2,-1.8],phone);for(let t=0;t<=11;t+=.25){const blend=smootherStep(Math.min(1,t/3.2)),camera=keys[0].position.map((v,i)=>v+(keys[1].position[i]-v)*blend);for(let i=0;i<48;i++){const p=swarmPose(i,siege,t,7);if(!holyContact(p.position,1.8,t,7).cleared)assert.ok(Math.hypot(...p.position.map((v,k)=>v-camera[k]))>4,'A flying fiend must not clip the camera.');}}}
+test('The detailed swarm stays outside the complete outbound and return camera corridor',()=>{
+  for(const siege of [0,19,26])for(const phone of [false,true]){const keys=awakeningCameraKeys(phone?[0,7.4,26]:[1.5,6.9,18],[0,1.2,-1.8],phone);for(let t=0;t<=26;t+=.25){const end=keys.findIndex((k,i)=>i>0&&t<=k.at),b=keys[end],a=keys[end-1],blend=smootherStep((t-a.at)/(b.at-a.at)),camera=a.position.map((v,i)=>v+(b.position[i]-v)*blend);for(let i=0;i<48;i++){const p=swarmPose(i,siege,t,7);if(!holyContact(p.position,p.scale*2.7,t,7).cleared)assert.ok(Math.hypot(...p.position.map((v,k)=>v-camera[k]))>6);}}}
+});
+
+test('Fiends have sculpted faces, fangs, separate curved wings, claws and three attack roles',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),swarm=w.reborn.swarm;assert.deepEqual(swarm.features,{eyes:2,fangs:12,claws:14,wingWebs:8});assert.ok(swarm.root.children.find(m=>m.name==='Sculpted fiend face').geometry.attributes.position.count>700);assert.ok(swarm.root.children.find(m=>m.name==='Left ribbed wing').geometry.attributes.position.count>1000);
+  assert.deepEqual([...new Set(Array.from({length:48},(_,i)=>swarmPose(i,3,0,0).mode))].sort(),[0,1,2]);w.update(0,0,0,.05,0,0,3);assert.ok(swarm.missiles.geometry.drawRange.count>0);w.dispose();
+});
+
+test('Golden surface fragments require light contact, finish fading, and reset without lingering; body rune effects are absent',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),swarm=w.reborn.swarm;w.update(0,0,0,.05,0,0,10);assert.equal(swarm.activeSparks,0);assert.equal(swarm.sparks.visible,false);let peak=0;for(let t=0;t<=16;t+=.2){w.update(t,1,0,.05,7,t,10);peak=Math.max(peak,swarm.activeSparks);}assert.ok(peak>100);assert.equal(swarm.activeSparks,0);w.quality(true,1);w.update(16,1,0,.05,7,16,10);assert.equal(swarm.activeSparks,0);w.update(0,0,0,.05,0,0,0);assert.equal(swarm.activeSparks,0);assert.equal(swarm.sparks.visible,false);w.update(0,1,0,.05,7,26,0,true);assert.equal(swarm.activeSparks,0);
+  const creatures=readFileSync(new URL(`${base}world-creatures.mjs`,import.meta.url),'utf8'),skin=readFileSync(new URL(`${base}world-spells.mjs`,import.meta.url),'utf8');assert.ok(!creatures.includes('runeMaterial')&&!creatures.includes('const sigil='));assert.ok(!skin.includes('spellScan'));w.dispose();
 });

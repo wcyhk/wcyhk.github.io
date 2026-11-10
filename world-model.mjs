@@ -22,14 +22,19 @@ export const smootherStep=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10);};
 export const HOLY_ORIGIN=Object.freeze([0,3.9,-3.2]);
 export function holyRadius(elapsed,mask){return mask===7?clamp((elapsed-1.4)*5,0,54):0;}
 export function holyContact(position,radius,elapsed,mask){const distance=Math.hypot(...position.map((v,i)=>v-HOLY_ORIGIN[i])),wave=holyRadius(elapsed,mask);return {touched:wave>0&&wave>=distance-radius,cleared:wave>=distance+radius,amount:wave>0?clamp((wave-distance+radius)/(2*radius),0,1):0};}
-export function swarmPose(index,siege,rebirth,mask,reduced=false){const t=reduced?0:siege+(mask===7?rebirth:0),angle=index/48*Math.PI*2+Math.sin(index*7.1)*.09,approach=easeWindow(t+(index%5)*.8,5,34),radius=(23+(index%7)*2.7)*(1-approach)+(8.8+(index%4)*.3)*approach;return {position:[Math.cos(angle)*radius,2.8+Math.pow(Math.max(0,Math.sin(angle)),4)*9+Math.sin(index*1.7)*1.1+Math.sin(t*2+index)*.35,Math.sin(angle)*radius],yaw:-angle-Math.PI/2,flap:reduced?0:Math.sin(t*6+index)*.65,scale:.6+(index%4)*.09};}
+export function swarmPose(index,siege,rebirth,mask,reduced=false){
+  const t=reduced?0:siege+(mask===7?rebirth:0),mode=index%3,phase=t*(.85+index%4*.07)+index*1.73,dive=reduced?0:mode===0?Math.max(0,Math.sin(phase)):0;
+  const angle=index/48*Math.PI*2+Math.sin(index*7.1)*.09+(reduced?0:Math.sin(phase*.42)*.075),approach=easeWindow(t+(index%5)*.8,5,34),radius=(25+(index%7)*2.5)*(1-approach)+(12+(index%4)*.3)*approach-dive*1.1;
+  const cast=reduced?0:mode===1?Math.pow(Math.max(0,Math.sin(phase)),6):mode===2?Math.pow(Math.max(0,Math.sin(phase*.8)),4)*.7:0;
+  return {position:[Math.cos(angle)*radius+Math.sign(Math.cos(angle))*8*Math.pow(Math.max(0,Math.sin(angle)),8),4.5+Math.pow(Math.max(0,Math.sin(angle)),4)*12+Math.sin(index*1.7)*.7+Math.sin(phase)*.4-dive*1.8,Math.sin(angle)*radius],yaw:-angle-Math.PI/2,flap:reduced?0:Math.sin(t*(mode===0?7:4.6)+index)*.65,scale:.79+(index%4)*.07,mode,cast,pitch:-.12-dive*.45,bank:reduced?0:Math.sin(phase*.55)*.2,jaw:.12+dive*.35+cast*.2};
+}
 // Both ruined steps and restored paving take the same route around the creative beacon.
 export function processionalStep(i){const z=5.2-i*.47,detour=Math.exp(-(((z-3.8)/1.05)**4));return {x:Math.sin(i*.24)*.45-.3-detour*1.45,z};}
 export function awakeningCameraKeys(position,target,phone=false){return [
   {at:0,position:[...position],target:[...target]},
-  {at:3.2,position:phone?[0,4.8,19]:[.35,3.25,11.8],target:[0,2.8,-2.4]},
-  {at:11,position:phone?[0,4.8,19]:[.35,3.25,11.8],target:[0,2.8,-2.4]},
-  {at:26,position:phone?[0,23,24]:[1.2,19.8,20],target:[0,1.6,-5]},
+  {at:4,position:phone?[0,25,25]:[1.2,20,26],target:[0,1.6,-5]},
+  {at:14,position:phone?[0,25,25]:[1.2,20,26],target:[0,1.6,-5]},
+  {at:26,position:phone?[0,7,26]:[.6,6.4,18.5],target:[0,1.25,-2]},
 ];}
 export const SIEGE_DURATION=32;
 export function advanceSiege(elapsed,dt,active,complete){return complete||!active?elapsed:clamp(elapsed+frameDelta(dt*1000),0,SIEGE_DURATION);}

@@ -1,8 +1,8 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=slow-sanctuary-20261110';
-import {createAncients} from './world-creatures.mjs?v=slow-sanctuary-20261110';
-import {createManifestation} from './world-reveal.mjs?v=slow-sanctuary-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=fiend-finale-20261110';
+import {createAncients} from './world-creatures.mjs?v=fiend-finale-20261110';
+import {createManifestation} from './world-reveal.mjs?v=fiend-finale-20261110';
 
-import {createDemonSwarm} from './world-swarm.mjs?v=slow-sanctuary-20261110';
+import {createDemonSwarm} from './world-swarm.mjs?v=fiend-finale-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -13,7 +13,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   const u={time:{value:0},cleanse:{value:0},sun:{value:0},wave:{value:0},ratio:{value:1},camera:{value:camera.position},threat:{value:0},enemyClock:{value:0},radius:{value:0},sources:{value:[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]}};
   const sphere=new THREE.SphereGeometry(1,24,18),cone=new THREE.ConeGeometry(1,1,16),torus=new THREE.TorusGeometry(1,.028,6,96);
   function mesh(group,geo,material,pos,scale=[1,1,1],rotation=[0,0,0]){const o=new THREE.Mesh(geo,material);o.position.set(...pos);o.scale.set(...scale);o.rotation.set(...rotation);group.add(o);return o;}
-  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors,swarm=createDemonSwarm(THREE,darkness);
+  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors,swarm=createDemonSwarm(THREE,darkness,scene);
 
   const marble=new THREE.MeshStandardMaterial({map:surfaces.inlayMap,normalMap:surfaces.normalMap,normalScale:new THREE.Vector2(.13,.13),color:0xe9e6d9,metalness:.22,roughness:.38,envMapIntensity:1.1});
   const gilt=new THREE.MeshStandardMaterial({color:0xe5bc6b,metalness:.84,roughness:.23,envMapIntensity:1.5});
@@ -96,19 +96,12 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   const gather=new THREE.Points(gatherGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uTime:u.time,uRatio:u.ratio,uOrigins:{value:origins},uScales:{value:scales},uReveal:{value:opacity},uGlow:{value:gatherLight}},
     vertexShader:`attribute vec4 aP;uniform float uTime,uRatio;uniform vec3 uOrigins[4];uniform float uScales[4],uReveal[4],uGlow[4];varying float vA;void main(){int id=int(aP.x);float r=uReveal[id],g=uGlow[id];vec3 p=position*uScales[id]+uOrigins[id];p+=vec3(sin(uTime*.7+aP.y*12.)*(1.-r),(.5+aP.z*4.)*(1.-r),cos(uTime*.6+aP.w*9.)*(1.-r));vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((1.+aP.w*2.)*uRatio*28./max(1.,-mv.z),1.,5.);vA=g*(.45+.55*sin(aP.z*30.+uTime)*sin(aP.z*30.+uTime));}`,
     fragmentShader:`varying float vA;void main(){vec2 p=(gl_PointCoord-.5)*2.;float r=length(p);if(r>1.)discard;float star=exp(-abs(p.x)*18.)+exp(-abs(p.y)*18.);gl_FragColor=vec4(vec3(2.7,2.15,1.1),(exp(-r*r*6.)+star*.14)*vA);}`}));gather.frustumCulled=false;scene.add(gather);
-  // Crimson energy streams reach towards the altar as the three bodies advance.
-  const menaceCount=1800,menaceSeeds=new Float32Array(menaceCount*4),menaceGeo=new THREE.BufferGeometry();
-  for(let i=0;i<menaceCount;i++)menaceSeeds.set([i%3,random(),random(),random()],i*4);
-  menaceGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(menaceCount*3),3));menaceGeo.setAttribute('aP',new THREE.BufferAttribute(menaceSeeds,4));
-  const menace=new THREE.Points(menaceGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uThreat:u.threat,uClock:u.enemyClock,uCleanse:u.cleanse,uSources:u.sources,uRadius:u.radius,uRatio:u.ratio},
-    vertexShader:`attribute vec4 aP;uniform float uThreat,uClock,uCleanse,uRatio,uRadius;uniform vec3 uSources[3];varying float vA;varying vec3 vColor;void main(){vec3 source=uSources[0];if(aP.x>.5)source=uSources[1];if(aP.x>1.5)source=uSources[2];float f=fract(aP.y+uClock*(.16+uThreat*.11));float swirl=uClock*(1.7+aP.z)+aP.w*6.283;vec3 vortex=vec3(cos(swirl),sin(swirl),sin(swirl*.7))*(.4+aP.z*1.0)*(1.-f);vec3 p=mix(source,vec3(0.,.5,-.2),f)+vortex;p.y+=sin(f*3.14159265)*(1.+aP.z*2.);p.x+=sin(f*15.+aP.w*6.)*.3;p.z+=cos(f*12.+aP.w*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;float burst=pow(max(0.,sin(uClock*2.1-aP.x*.8)),6.);gl_PointSize=clamp((1.+aP.z*2.+burst*2.)*uRatio*32./max(1.,-mv.z),1.,7.);vA=uThreat*step(uRadius,length(p-vec3(0.,3.9,-3.2)))*sin(f*3.14159265)*(.7+burst*1.3);vColor=aP.x<.5?vec3(.9,.18,2.):aP.x<1.5?vec3(2.,.08,.22):vec3(.12,.6,2.1);}`,
-    fragmentShader:`varying float vA;varying vec3 vColor;void main(){float r=length(gl_PointCoord-.5)*2.;if(r>1.)discard;gl_FragColor=vec4(vColor,exp(-r*r*5.)*vA*.85);}`}));menace.frustumCulled=false;scene.add(menace);
   return {
     darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,swarm,centreManifest,floorManifest,dispose(){ancients.dispose();},
-    quality(light,ratio){swarm.quality(light);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);menaceGeo.setDrawRange(0,light?600:menaceCount);u.ratio.value=ratio;},
+    quality(light,ratio){swarm.quality(light,ratio);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);u.ratio.value=ratio;},
     update(time,elapsed,mask,siegeElapsed=0,reduced=false){const s=rebirthState(elapsed,mask),threat=siegeState(siegeElapsed);u.time.value=time;u.sun.value=s.sun;u.cleanse.value=s.cleanse;u.wave.value=s.wave;u.radius.value=holyRadius(elapsed,mask);u.threat.value=.2+threat.urgency*.8;u.enemyClock.value=reduced?0:siegeElapsed;
       darkness.visible=s.cleanse<1;heavens.visible=s.palaces>0;sanctum.visible=s.sanctum>0;rays.visible=s.sun>0;motes.visible=s.sun>0;waveShell.visible=s.wave>0&&s.wave<1;
-      waveShell.scale.setScalar(Math.max(.001,u.radius.value));rays.quaternion.copy(camera.quaternion);menace.visible=s.cleanse<1;
+      waveShell.scale.setScalar(Math.max(.001,u.radius.value));rays.quaternion.copy(camera.quaternion);
       // Keep landmarks within the portrait field without changing their real 3D interaction space.
       const spread=cosmicSpread(camera.aspect);
       ancients.update(siegeElapsed,elapsed,mask,reduced,spread);swarm.update(siegeElapsed,elapsed,mask,reduced);
