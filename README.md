@@ -16,4 +16,6 @@ The landscape uses procedural PBR stone and engraved inlays, environment reflect
 
 The last visible gallery row uses a translucent navy glass surface, light text and a gold primary action. CSS row selectors follow the three-column desktop grid and two-column grid below 951px, including search and category filtering. Card links and poster images retain their original destinations and artwork.
 
+Beacon beam fade clamps its UV-derived fractional-power base to [0,1]. Multisampled edge interpolation can otherwise feed a negative value into the power calculation; the resulting invalid alpha is amplified by HDR bloom into black tiles at high camera angles. Keep this clamp when changing the beam shader.
+
 Run `node --test tests/*.test.mjs` for discovery, camera/raycast geometry, mapped-surface UVs, biography, and existing entry-route checks.

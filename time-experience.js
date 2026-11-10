@@ -37,7 +37,7 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=worlds-end-polish-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=beam-edge-fix-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
       const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});

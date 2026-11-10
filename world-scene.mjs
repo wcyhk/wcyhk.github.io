@@ -113,7 +113,9 @@ export function createWorldScene(THREE,camera){
     const gemMat=new THREE.MeshPhysicalMaterial({color:def.color,emissive:def.color,emissiveIntensity:.35,metalness:.25,roughness:.08,clearcoat:1,clearcoatRoughness:.06});const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.18),gemMat);gem.position.y=1.45;group.add(gem);
     const hoop=new THREE.Mesh(new THREE.TorusGeometry(.37,.016,6,40),gold);hoop.position.y=1.45;hoop.rotation.x=.35;group.add(hoop);
     const aura=glow(def.color,1.4,.45);aura.position.y=1.45;group.add(aura);
-    const beamMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,uniforms:{uLit:{value:0},uColor:{value:new THREE.Color(def.color)}},vertexShader:uvVertex,fragmentShader:`varying vec2 vUv;uniform float uLit;uniform vec3 uColor;void main(){float shaft=exp(-abs(vUv.x-.5)*28.);float fade=pow(1.-vUv.y,1.7)*smoothstep(0.,.08,vUv.y);gl_FragColor=vec4(uColor*(1.3+uLit),shaft*fade*uLit*.5);}`});
+    // MSAA evaluates edge samples outside the plane: UVs can exceed [0,1].
+    // A negative fractional-power base produces NaN, which HDR bloom spreads into black tiles.
+    const beamMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,uniforms:{uLit:{value:0},uColor:{value:new THREE.Color(def.color)}},vertexShader:uvVertex,fragmentShader:`varying vec2 vUv;uniform float uLit;uniform vec3 uColor;void main(){float shaft=exp(-abs(vUv.x-.5)*28.);float fade=pow(clamp(1.-vUv.y,0.,1.),1.7)*smoothstep(0.,.08,vUv.y);gl_FragColor=vec4(uColor*(1.3+uLit),shaft*fade*uLit*.5);}`});
     const beam=new THREE.Mesh(new THREE.PlaneGeometry(1.2,10),beamMat);beam.position.y=6.4;group.add(beam);const beam2=beam.clone();beam2.rotation.y=Math.PI/2;group.add(beam2);
     const hit=new THREE.Mesh(new THREE.SphereGeometry(.55,12,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false}));hit.position.y=1.45;hit.userData.beaconId=def.id;group.add(hit);pickTargets.push(hit);
     const point=new THREE.PointLight(def.color,1,5,2);point.position.y=1.5;group.add(point);
