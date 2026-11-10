@@ -1,6 +1,6 @@
-import {enemyPose,siegeState,holyRadius,holyContact} from './world-model.mjs?v=fiend-finale-20261110';
+import {enemyPose,siegeState,holyRadius,holyContact} from './world-model.mjs?v=aegis-cannon-20261110';
 
-import {holySkin} from './world-spells.mjs?v=fiend-finale-20261110';
+import {holySkin} from './world-spells.mjs?v=aegis-cannon-20261110';
 
 // Swept anatomy, sculpted skulls and curved wing webs, with articulated joints.
 // Skin is opaque and depth-writing; a holy dissolve uses discard rather than see-through bodies.

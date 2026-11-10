@@ -1,4 +1,4 @@
-import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION,awakeningCameraKeys,smootherStep} from './world-model.mjs?v=fiend-finale-20261110';
+import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION,awakeningCameraKeys,smootherStep,advanceSpin} from './world-model.mjs?v=aegis-cannon-20261110';
 
 const root=document.querySelector('.time-studio');
 if(root){
@@ -46,7 +46,7 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=fiend-finale-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=aegis-cannon-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
       const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -58,7 +58,7 @@ if(root){
       if(!hdrSupported){light=true;quality.disabled=true;quality.title='此裝置使用相容光影，所有探索功能仍可使用。';}
       const world=createWorldScene(THREE,camera),post=hdrSupported?createWorldPost(THREE,renderer):null,raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
       world.environment(renderer);
-      let last=performance.now(),pulse=0,energy=0,siegeElapsed=0,rebirthElapsed=0,dragging=false,down=null,touchActive=false,tween=null,frames=0;
+      let last=performance.now(),spinElapsed=0,pulse=0,energy=0,siegeElapsed=0,rebirthElapsed=0,dragging=false,down=null,touchActive=false,tween=null,frames=0;
       const markerWorld=BEACONS.map(()=>new THREE.Vector3()),markerNdc=BEACONS.map(()=>new THREE.Vector3());
       const defaultView=()=>({position:new THREE.Vector3(mobile.matches?0:1.5,mobile.matches?7.4:6.9,mobile.matches?26.0:18.0),target:new THREE.Vector3(0,1.2,-1.8)});
       const drainDamping=()=>{const damping=controls.enableDamping;controls.enableDamping=false;controls.update();controls.enableDamping=damping;};
@@ -88,14 +88,14 @@ if(root){
       setQuality=resize;const ro=new ResizeObserver(resize);ro.observe(host);
       function frame(now){
         raf=0;if(!visible||document.hidden||failed||disposed)return;
-        const dt=frameDelta(now-last);last=now;time+=dt*speed;pulse=Math.max(0,pulse-dt*.62);energy+=(journey.count/3-energy)*(1-Math.exp(-dt*1.8));
+        const dt=frameDelta(now-last);last=now;time+=dt*speed;spinElapsed=advanceSpin(spinElapsed,dt,motion.matches);pulse=Math.max(0,pulse-dt*.62);energy+=(journey.count/3-energy)*(1-Math.exp(-dt*1.8));
         siegeElapsed=advanceSiege(siegeElapsed,dt,storyVisible,journey.complete);
         const rescue=resolveSiege(journey,world.destruction.altarThreat?SIEGE_DURATION:siegeElapsed);
         if(rescue.automatic){journey=rescue.journey;root.dataset.awakening='automatic';updateJourney();announce('暗影逼近祭壇，守護機制已自動喚醒三座界標，釋放聖光。');$('#time-instructions').textContent='守護機制已自動覺醒，祭壇安全。';root.dispatchEvent(new CustomEvent('world-beacon',{detail:{id:null,newLight:true,complete:true,automatic:true}}));}
         if(tween){tween.elapsed+=dt;const keys=tween.keys,index=keys.findIndex((key,i)=>i>0&&tween.elapsed<=key.at),end=index<0?keys.length-1:index,a=keys[end-1],b=keys[end],t=clamp((tween.elapsed-a.at)/(b.at-a.at),0,1),smooth=smootherStep(t);camera.position.lerpVectors(a.position,b.position,smooth);controls.target.lerpVectors(a.target,b.target,smooth);if(tween.elapsed>=REBIRTH_DURATION)tween=null;}
         rebirthElapsed=advanceRebirth(rebirthElapsed,dt,journey.mask,motion.matches);
-        const moving=controls.update(),story=world.update(time,energy,pulse,dt,journey.mask,rebirthElapsed,siegeElapsed,motion.matches);world.scene.updateMatrixWorld();
-        storyText(story.title);root.dataset.rebirth=rebirthElapsed.toFixed(2);root.dataset.goldParticles=String(world.reborn.swarm.activeSparks);root.dataset.swarm=String(world.reborn.swarm.records.filter(r=>!r.cleared).length);root.dataset.ancients=String(world.reborn.ancients.actors.filter(a=>a.group.visible).length);root.dataset.holyRadius=(story.wave*54).toFixed(2);root.dataset.shattered=String(world.destruction.records.filter(r=>r.shattered).length);root.dataset.hitBy=[...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort().join(',');
+        const moving=controls.update(),story=world.update(time,energy,pulse,dt,journey.mask,rebirthElapsed,siegeElapsed,motion.matches,spinElapsed);world.scene.updateMatrixWorld();
+        storyText(story.title);root.dataset.rebirth=rebirthElapsed.toFixed(2);root.dataset.shieldHits=String(world.reborn.swarm.shield.totalHits);root.dataset.activeImpacts=String(world.reborn.swarm.shield.activeImpacts);root.dataset.energyCannons=String(world.reborn.swarm.cannonCount);root.dataset.spinTime=spinElapsed.toFixed(3);root.dataset.coreAngle=world.starCore.rotation.y.toFixed(4);root.dataset.goldParticles=String(world.reborn.swarm.activeSparks);root.dataset.swarm=String(world.reborn.swarm.records.filter(r=>!r.cleared).length);root.dataset.ancients=String(world.reborn.ancients.actors.filter(a=>a.group.visible).length);root.dataset.holyRadius=(story.wave*54).toFixed(2);root.dataset.shattered=String(world.destruction.records.filter(r=>r.shattered).length);root.dataset.hitBy=[...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort().join(',');
         const threat=siegeState(siegeElapsed);root.dataset.siege=siegeElapsed.toFixed(2);root.style.setProperty('--siege',String(journey.complete?0:threat.progress));root.style.setProperty('--holy-flash',String(motion.matches?0:story.flare*.32));
         const threatLabel=journey.complete?(root.dataset.awakening==='automatic'?'界標自動覺醒 · 祭壇安全':'聖光已釋放 · 祭壇安全'):threat.urgency>.75?'暗影逼近 · 守護即將覺醒':'暗影正在逼近祭壇';if($('#world-threat-label').textContent!==threatLabel)$('#world-threat-label').textContent=threatLabel;
         const storyPhase=story.complete?'reborn':journey.complete?'purifying':'dark';
@@ -110,11 +110,11 @@ if(root){
         frames++;root.dataset.frames=String(frames);root.dataset.camera=camera.position.toArray().map(n=>n.toFixed(2)).join(',');root.dataset.worldTime=time.toFixed(3);root.dataset.energy=energy.toFixed(3);root.dataset.drawCalls=String(renderer.info.render.calls);root.dataset.triangles=String(renderer.info.render.triangles);
         const settling=(journey.complete&&rebirthElapsed<REBIRTH_DURATION)||Math.abs(energy-journey.count/3)>.001||world.beacons.some((b,i)=>Math.abs(b.lit-Number(!!(journey.mask&(1<<i))))>.001);
         const siegeMoving=storyVisible&&!journey.complete&&siegeElapsed<SIEGE_DURATION;
-        if(!raf&&(speed||pulse>.001||dragging||moving||tween||settling||siegeMoving))raf=requestAnimationFrame(frame);
+        if(!raf&&(speed||pulse>.001||dragging||moving||tween||settling||siegeMoving||!motion.matches))raf=requestAnimationFrame(frame);
       }
       wake=()=>{if(!raf&&visible&&!document.hidden&&!failed&&!disposed){last=performance.now();raf=requestAnimationFrame(frame);}};
       listen(document,'visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else wake();});
-      listen(motion,'change',e=>{if(e.matches)flowChange(0);});
+      listen(motion,'change',e=>{if(e.matches)flowChange(0);else wake();});
       listen(mobile,'change',()=>{setTouch(false);resetView();resize();});
       listen(canvas,'webglcontextlost',e=>{e.preventDefault();fallback('3D 顯示已暫停，重新整理可再試。個人介紹仍可完整閱讀。');});
       listen(window,'pagehide',e=>{if(e.persisted)return;disposed=true;cancelAnimationFrame(raf);observer.disconnect();storyObserver.disconnect();ro.disconnect();controls.dispose();post?.dispose();world.dispose();renderer.dispose();events.abort();});

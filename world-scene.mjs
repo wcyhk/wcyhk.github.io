@@ -1,7 +1,7 @@
-import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=fiend-finale-20261110';
+import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=aegis-cannon-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createIslandDestruction} from './world-destruction.mjs?v=fiend-finale-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=fiend-finale-20261110';
+import {createIslandDestruction} from './world-destruction.mjs?v=aegis-cannon-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=aegis-cannon-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -85,9 +85,9 @@ export function createWorldScene(THREE,camera){
   const orbital2=new THREE.Mesh(new THREE.TorusGeometry(3.97,.008,5,160),new THREE.MeshBasicMaterial({color:0x98bed6,transparent:true,opacity:.3}));orbital2.rotation.set(-.45,.5,-.25);gate.add(orbital2);
   const starCore=new THREE.Mesh(new THREE.SphereGeometry(2.55,80,56),new THREE.ShaderMaterial({
     uniforms:{uTime:uniforms.time,uDawn:uniforms.dawn,uCamera:uniforms.camera},
-    vertexShader:`varying vec3 vN,vW;void main(){vN=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-    fragmentShader:`varying vec3 vN,vW;uniform float uTime,uDawn;uniform vec3 uCamera;${noiseGLSL}
-    void main(){vec3 n=normalize(vN);vec2 p=n.xy*6.5+vec2(uTime*.026,uTime*-.013);float turbulence=fbm(p+fbm(p*.7+uTime*.008)*2.);float granules=noise(n.xy*150.+uTime*.04);float veins=exp(-abs(fbm(p*1.7+3.4)-.49)*85.);float spots=smoothstep(.67,.81,fbm(p*.62-uTime*.005));float limb=pow(max(.02,dot(n,normalize(uCamera-vW))),.52);vec3 fire=mix(vec3(.65,.055,.004),vec3(3.1,1.3,.21),smoothstep(.18,.84,turbulence));fire+=vec3(1.8,.43,.035)*veins;fire*=.32+.68*limb;fire*=.66+granules*.5;fire*=1.-spots*.73;vec3 voidColor=vec3(.0001,.00025,.0006);gl_FragColor=vec4(mix(voidColor,fire,smoothstep(0.,1.,uDawn)),1.);
+    vertexShader:`varying vec3 vN,vW,vLocal;void main(){vLocal=normal;vN=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+    fragmentShader:`varying vec3 vN,vW,vLocal;uniform float uTime,uDawn;uniform vec3 uCamera;${noiseGLSL}
+    void main(){vec3 n=normalize(vN);vec2 p=normalize(vLocal).xy*6.5+vec2(uTime*.026,uTime*-.013);float turbulence=fbm(p+fbm(p*.7+uTime*.008)*2.);float granules=noise(normalize(vLocal).xy*150.+uTime*.04);float veins=exp(-abs(fbm(p*1.7+3.4)-.49)*85.);float spots=smoothstep(.67,.81,fbm(p*.62-uTime*.005));float limb=pow(max(.02,dot(n,normalize(uCamera-vW))),.52);vec3 fire=mix(vec3(.65,.055,.004),vec3(3.1,1.3,.21),smoothstep(.18,.84,turbulence));fire+=vec3(1.8,.43,.035)*veins;fire*=.32+.68*limb;fire*=.66+granules*.5;fire*=1.-spots*.73;vec3 voidColor=vec3(.0001,.00025,.0006);gl_FragColor=vec4(mix(voidColor,fire,smoothstep(0.,1.,uDawn)),1.);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
     }`,
@@ -150,11 +150,11 @@ export function createWorldScene(THREE,camera){
   const destruction=createIslandDestruction(THREE,scene,sideIslands,stone);
   const labelPosition=new THREE.Vector3();let lastShadowPhase='';
   return {
-    scene,beacons,pickTargets,reborn,destruction,gate,mainIsland,stairs,
+    scene,beacons,pickTargets,reborn,destruction,gate,starCore,disk,mainIsland,stairs,
     environment(renderer){scene.environment=surfaces.environment(renderer);},
     markerPositions(){return beacons.map(b=>b.group.localToWorld(labelPosition.set(0,1.6,0)).clone());},
     quality(light,ratio){destruction.quality(light);reborn.quality(light,ratio);dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
-    update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0,siegeElapsed=0,reduced=false){
+    update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0,siegeElapsed=0,reduced=false,spinElapsed=time){
       const story=reborn.update(time,rebirthElapsed,mask,siegeElapsed,reduced);
       uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=story.sun;uniforms.dawn.value=dawn;
       const spread=cosmicSpread(camera.aspect);
@@ -164,7 +164,7 @@ export function createWorldScene(THREE,camera){
       mainIsland.children[0].visible=story.sun<1;
       topMaterial.color.setRGB(1+story.sanctum*.5,1+story.sanctum*.4,1+story.sanctum*.23);
       scene.fog.color.setRGB(.063+story.sun*.02,.094+story.sun*.026,.176+story.sun*.025);
-      gate.rotation.z=Math.sin(time*.04)*.025;gateAura.material.opacity=.12+energy*.12+dawn*.3;disk.rotation.z=.1+time*.009;orbital.rotation.z=.28+time*.008;orbital2.rotation.y=.5-time*.005;coreLight.intensity=3+energy*10+dawn*65;key.intensity=2.5+dawn*3.3;key.color.set(dawn>.01?0xffd09a:0xc8d6e5);
+      gate.rotation.z=spinElapsed*.035;starCore.rotation.y=spinElapsed*.16;starCore.rotation.z=.12;gateAura.material.opacity=.12+energy*.12+dawn*.3;disk.rotation.z=.1+spinElapsed*.14;orbital.rotation.z=.28+spinElapsed*.055;orbital2.rotation.y=.5-spinElapsed*.04;coreLight.intensity=3+energy*10+dawn*65;key.intensity=2.5+dawn*3.3;key.color.set(dawn>.01?0xffd09a:0xc8d6e5);
       for(const p of prominences)p.loop.material.opacity=dawn*(.35+Math.sin(time*.17+p.phase)*.12);
       for(let i=0;i<gateParts.length;i++){const amount=Math.sin(time*.12+i)*.035+(1-energy)*.075;gateParts[i].position.x=Math.cos(i*Math.PI*2/9)*amount;gateParts[i].position.y=Math.sin(i*Math.PI*2/9)*amount;}
       for(let i=0;i<beacons.length;i++){const b=beacons[i];const ground=-.48+islandHeight(BEACONS[i].position[0],BEACONS[i].position[2]);b.group.position.y=ground+(-.33-ground)*story.sun;b.lit+=(Number(!!(mask&(1<<i)))-b.lit)*(1-Math.exp(-dt*3.4));b.gem.rotation.y=time*.32+i;b.hoop.rotation.y=time*.16+i;b.beamMat.uniforms.uLit.value=b.lit;b.point.intensity=1.1+b.lit*8;b.aura.material.opacity=.32+b.lit*.45;b.aura.scale.setScalar(1.15+b.lit*.7);b.gemMat.color.set(BEACONS[i].color);b.gemMat.emissiveIntensity=.35+b.lit*1.4;}

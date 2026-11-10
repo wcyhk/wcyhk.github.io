@@ -20,6 +20,17 @@ export const REBIRTH_DURATION=26;
 const easeWindow=(value,start,end)=>{const t=clamp((value-start)/(end-start),0,1);return t*t*(3-2*t);};
 export const smootherStep=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10);};
 export const HOLY_ORIGIN=Object.freeze([0,3.9,-3.2]);
+export const SHIELD=Object.freeze({center:Object.freeze([0,-.42,-.1]),radii:Object.freeze([7.65,9.6,7.65])});
+export function shieldIntersection(start,target){
+  const m=start.map((v,i)=>(v-SHIELD.center[i])/SHIELD.radii[i]),d=target.map((v,i)=>(v-start[i])/SHIELD.radii[i]),a=d.reduce((s,v)=>s+v*v,0),b=2*m.reduce((s,v,i)=>s+v*d[i],0),c=m.reduce((s,v)=>s+v*v,0)-1,disc=b*b-4*a*c;
+  if(a<1e-12||c<0||disc<0)return null;const t=(-b-Math.sqrt(disc))/(2*a);if(t<0||t>1)return null;const point=start.map((v,i)=>v+(target[i]-v)*t);if(point[1]<SHIELD.center[1])return null;const normal=point.map((v,i)=>(v-SHIELD.center[i])/SHIELD.radii[i]**2),length=Math.hypot(...normal);return {point,normal:normal.map(v=>v/length),t};
+}
+export function cannonPacket(index,barrel,clock){
+  const raw=clock*.32+barrel*.25+index*.13,cycle=Math.floor(raw),phase=raw-cycle,launched=(cycle-barrel*.25-index*.13)/.32;if(launched<0)return null;const source=swarmPose(index,launched,0,0).position,target=[0,2.2,-.1],direction=target.map((v,i)=>v-source[i]),length=Math.hypot(...direction);for(let i=0;i<3;i++)direction[i]/=length;
+  const start=source.map((v,i)=>v+direction[i]*2.3),hit=shieldIntersection(start,target);if(!hit)return null;const flightLength=Math.hypot(...hit.point.map((v,i)=>v-start[i])),travel=clamp(phase/.78,0,1),front=start.map((v,i)=>v+direction[i]*flightLength*travel),beamLength=Math.min(3.4,flightLength*travel);
+  return {cycle,phase,start,front,direction,beamLength,hit,arrived:phase>=.78,impactTime:launched+.78/.32};
+}
+export function advanceSpin(elapsed,dt,reduced=false){return elapsed+(reduced?0:frameDelta(dt*1000));}
 export function holyRadius(elapsed,mask){return mask===7?clamp((elapsed-1.4)*5,0,54):0;}
 export function holyContact(position,radius,elapsed,mask){const distance=Math.hypot(...position.map((v,i)=>v-HOLY_ORIGIN[i])),wave=holyRadius(elapsed,mask);return {touched:wave>0&&wave>=distance-radius,cleared:wave>=distance+radius,amount:wave>0?clamp((wave-distance+radius)/(2*radius),0,1):0};}
 export function swarmPose(index,siege,rebirth,mask,reduced=false){

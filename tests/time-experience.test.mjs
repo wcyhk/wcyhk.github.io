@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep,SHIELD,shieldIntersection,cannonPacket,advanceSpin}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -176,10 +176,30 @@ test('The detailed swarm stays outside the complete outbound and return camera c
 
 test('Fiends have sculpted faces, fangs, separate curved wings, claws and three attack roles',()=>{
   const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),swarm=w.reborn.swarm;assert.deepEqual(swarm.features,{eyes:2,fangs:12,claws:14,wingWebs:8});assert.ok(swarm.root.children.find(m=>m.name==='Sculpted fiend face').geometry.attributes.position.count>700);assert.ok(swarm.root.children.find(m=>m.name==='Left ribbed wing').geometry.attributes.position.count>1000);
-  assert.deepEqual([...new Set(Array.from({length:48},(_,i)=>swarmPose(i,3,0,0).mode))].sort(),[0,1,2]);w.update(0,0,0,.05,0,0,3);assert.ok(swarm.missiles.geometry.drawRange.count>0);w.dispose();
+  assert.deepEqual([...new Set(Array.from({length:48},(_,i)=>swarmPose(i,3,0,0).mode))].sort(),[0,1,2]);w.update(0,0,0,.05,0,0,3);assert.ok(swarm.cannonCount>0);w.dispose();
 });
 
 test('Golden surface fragments require light contact, finish fading, and reset without lingering; body rune effects are absent',()=>{
   const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),swarm=w.reborn.swarm;w.update(0,0,0,.05,0,0,10);assert.equal(swarm.activeSparks,0);assert.equal(swarm.sparks.visible,false);let peak=0;for(let t=0;t<=16;t+=.2){w.update(t,1,0,.05,7,t,10);peak=Math.max(peak,swarm.activeSparks);}assert.ok(peak>100);assert.equal(swarm.activeSparks,0);w.quality(true,1);w.update(16,1,0,.05,7,16,10);assert.equal(swarm.activeSparks,0);w.update(0,0,0,.05,0,0,0);assert.equal(swarm.activeSparks,0);assert.equal(swarm.sparks.visible,false);w.update(0,1,0,.05,7,26,0,true);assert.equal(swarm.activeSparks,0);
   const creatures=readFileSync(new URL(`${base}world-creatures.mjs`,import.meta.url),'utf8'),skin=readFileSync(new URL(`${base}world-spells.mjs`,import.meta.url),'utf8');assert.ok(!creatures.includes('runeMaterial')&&!creatures.includes('const sigil='));assert.ok(!skin.includes('spellScan'));w.dispose();
+});
+
+
+test('Energy cannon packets stop exactly on the ellipsoidal shield, from every firing direction',()=>{
+  const level=p=>p.reduce((sum,v,i)=>sum+((v-SHIELD.center[i])/SHIELD.radii[i])**2,0);
+  assert.equal(shieldIntersection(SHIELD.center,[0,2,0]),null);
+  for(let i=0;i<48;i++)if(i%3!==0)for(const k of [0,1])for(const clock of [4,10,19,27]){const p=cannonPacket(i,k,clock);assert.ok(p);assert.ok(Math.abs(level(p.hit.point)-1)<1e-9);assert.ok(p.hit.point[1]>=SHIELD.center[1]);assert.ok(Math.abs(Math.hypot(...p.hit.normal)-1)<1e-10);assert.ok(level(p.front)>=1-1e-8);assert.ok(p.beamLength<=3.4);}
+});
+
+test('The transparent shield latches each hit once, renders finite effects, fades and resets',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),shield=w.reborn.swarm.shield,hit=shieldIntersection([20,4,0],[0,2,0]);shield.begin(10,false);shield.hit(1,4,hit,10);shield.hit(1,4,hit,10);shield.update(0,0);assert.equal(shield.totalHits,1);assert.equal(shield.activeImpacts,1);assert.ok(shield.dome.material.transparent&&!shield.dome.material.depthWrite);shield.begin(12,false);shield.update(0,0);assert.equal(shield.activeImpacts,0);shield.begin(0,false);shield.update(0,0);assert.equal(shield.totalHits,0);assert.equal(shield.activeImpacts,0);w.dispose();
+});
+
+test('Actual cannon fire hits the shield in both quality modes, and replay clears all shield events',()=>{
+  for(const light of [false,true]){const w=createWorldScene(THREE,new THREE.PerspectiveCamera());w.quality(light,1);let maximum=0;for(let t=0;t<=10;t+=.1){w.update(0,0,0,.05,0,0,t,false,t);maximum=Math.max(maximum,w.reborn.swarm.shield.activeImpacts);}assert.ok(w.reborn.swarm.shield.totalHits>10);assert.ok(maximum>0&&maximum<=(light?8:16));assert.ok(w.reborn.swarm.missiles.isInstancedMesh&&w.reborn.swarm.missiles.geometry.type==='CylinderGeometry');w.update(0,0,0,.05,0,0,0);assert.equal(w.reborn.swarm.shield.totalHits,0);w.dispose();}
+});
+
+test('Core and accretion disk keep rotating with a paused star-flow clock in darkness and sunlight',()=>{
+  assert.equal(advanceSpin(4,.05),4.05);assert.equal(advanceSpin(4,50),4.05);assert.equal(advanceSpin(4,.05,true),4);
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());for(const mask of [0,7]){w.update(0,mask===7?1:0,0,.05,mask,26,10,false,4);const a=w.starCore.rotation.y,d=w.disk.rotation.z;w.update(0,mask===7?1:0,0,.05,mask,26,10,false,5);assert.ok(w.starCore.rotation.y>a);assert.ok(w.disk.rotation.z>d);assert.equal(w.starCore.material.uniforms.uTime.value,0);}w.dispose();
 });

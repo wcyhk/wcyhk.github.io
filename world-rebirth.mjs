@@ -1,8 +1,8 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=fiend-finale-20261110';
-import {createAncients} from './world-creatures.mjs?v=fiend-finale-20261110';
-import {createManifestation} from './world-reveal.mjs?v=fiend-finale-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=aegis-cannon-20261110';
+import {createAncients} from './world-creatures.mjs?v=aegis-cannon-20261110';
+import {createManifestation} from './world-reveal.mjs?v=aegis-cannon-20261110';
 
-import {createDemonSwarm} from './world-swarm.mjs?v=fiend-finale-20261110';
+import {createDemonSwarm} from './world-swarm.mjs?v=aegis-cannon-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -13,7 +13,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   const u={time:{value:0},cleanse:{value:0},sun:{value:0},wave:{value:0},ratio:{value:1},camera:{value:camera.position},threat:{value:0},enemyClock:{value:0},radius:{value:0},sources:{value:[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]}};
   const sphere=new THREE.SphereGeometry(1,24,18),cone=new THREE.ConeGeometry(1,1,16),torus=new THREE.TorusGeometry(1,.028,6,96);
   function mesh(group,geo,material,pos,scale=[1,1,1],rotation=[0,0,0]){const o=new THREE.Mesh(geo,material);o.position.set(...pos);o.scale.set(...scale);o.rotation.set(...rotation);group.add(o);return o;}
-  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors,swarm=createDemonSwarm(THREE,darkness,scene);
+  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors,swarm=createDemonSwarm(THREE,darkness,scene,camera);
 
   const marble=new THREE.MeshStandardMaterial({map:surfaces.inlayMap,normalMap:surfaces.normalMap,normalScale:new THREE.Vector2(.13,.13),color:0xe9e6d9,metalness:.22,roughness:.38,envMapIntensity:1.1});
   const gilt=new THREE.MeshStandardMaterial({color:0xe5bc6b,metalness:.84,roughness:.23,envMapIntensity:1.5});
