@@ -103,3 +103,37 @@
 .hero-intro{font-size:15px;letter-spacing:4px;color:#e9ddc9;margin:0 0 20px;line-height:1.8}
 .studio-signature small+small{margin-top:8px}
 @media(max-width:720px){.hero-intro{font-size:11px;letter-spacing:2px;margin-bottom:15px}}
+
+/* Approved professional profile: a readable editorial hierarchy, scoped to About. */
+.studio-expanded{grid-template-columns:minmax(220px,.8fr) minmax(0,1.4fr);column-gap:clamp(36px,6vw,90px);row-gap:64px;align-items:center}
+.studio-expanded .studio-art{width:100%;max-width:380px;justify-self:center}
+.studio-expanded .studio-copy{min-width:0;max-width:700px}
+.studio-expanded .studio-copy h2{font-size:clamp(29px,3vw,44px);line-height:1.55;letter-spacing:1px;margin-bottom:24px}
+.studio-expanded .studio-copy h2 em{color:#826638}
+.studio-expanded .studio-copy>p:not(.eyebrow),.studio-expanded .studio-body{font-size:16px;line-height:1.95;color:#4e554f;overflow-wrap:anywhere}
+.studio-expanded .studio-copy>p:not(.eyebrow){margin:0 0 18px}
+.studio-expanded .studio-copy>.studio-role{font-size:18px;font-weight:600;line-height:1.7;color:#263246;margin-bottom:26px}
+.studio-expanded .studio-role span{display:block;font-size:14px;font-weight:400;letter-spacing:.08em;color:#77613e;margin-top:7px}
+.studio-expanded .studio-details{grid-column:1/-1;min-width:0}
+.studio-expanded .studio-chapter{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(0,1.4fr);gap:clamp(36px,6vw,90px);padding:40px 0;border-top:1px solid #cfc4b1}
+.studio-expanded .studio-chapter h3{font-family:var(--serif);font-size:22px;font-weight:600;line-height:1.7;letter-spacing:.035em;margin:0;color:#263246}
+.studio-expanded .studio-body{max-width:700px;min-width:0}
+.studio-expanded .studio-body p{margin:0 0 18px}
+.studio-expanded .studio-body p:last-child{margin-bottom:0}
+.studio-expanded .studio-body ul{padding-left:1.2em;margin:0}
+.studio-expanded .studio-body li{padding-left:.3em;margin:0 0 13px}
+.studio-expanded .studio-body li:last-child{margin-bottom:0}
+.studio-expanded .studio-body li::marker{color:#937749}
+.studio-expanded .studio-body strong{font-weight:600;color:#354235}
+.studio-expanded .studio-work-list strong{display:block}
+.studio-expanded .studio-manifesto{padding:32px 36px;margin:8px 0 40px;border-left:3px solid #a2834e;background:#e4ddcd;color:#645637;font-size:15px;line-height:1.9}
+.studio-expanded .studio-manifesto strong{display:inline-block;font-family:var(--serif);font-size:clamp(21px,2vw,29px);font-weight:600;line-height:1.7;color:#263246;margin-top:10px;letter-spacing:.03em}
+.studio-expanded .studio-mobile-break{display:none}
+.studio-expanded .studio-qualifications{padding-bottom:30px}
+.studio-expanded .studio-endnote{display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #cfc4b1;padding-top:28px}
+.studio-expanded .studio-signature,.studio-expanded .studio-links{margin-top:0}
+.studio-expanded .studio-signature small{color:#756751;font-size:8px;letter-spacing:2px}
+.studio-expanded .studio-links{flex-wrap:wrap;gap:14px 25px}
+.studio-expanded .studio-links a{font-size:13px;color:#69552f;min-height:44px;display:inline-flex;align-items:center;padding:5px 0}
+@media(max-width:950px){.studio-expanded{grid-template-columns:minmax(170px,.65fr) minmax(0,1.4fr);column-gap:32px}.studio-expanded .studio-chapter{grid-template-columns:minmax(190px,.65fr) minmax(0,1.4fr);gap:32px}.studio-expanded .studio-chapter h3{font-size:20px}}
+@media(max-width:720px){.studio-expanded{grid-template-columns:minmax(0,1fr);row-gap:32px}.studio-expanded .studio-art{max-width:210px;grid-row:2}.studio-expanded .studio-copy{grid-row:1}.studio-expanded .studio-copy h2{font-size:clamp(28px,7.4vw,38px);line-height:1.6;letter-spacing:.02em;margin-bottom:20px}.studio-expanded .studio-copy>.studio-role{font-size:17px;margin-bottom:24px}.studio-expanded .studio-role span{font-size:13px;letter-spacing:.03em}.studio-expanded .studio-copy>p:not(.eyebrow),.studio-expanded .studio-body{font-size:16px;line-height:1.95}.studio-expanded .studio-copy>.studio-role{font-size:17px;line-height:1.7}.studio-expanded .studio-chapter{grid-template-columns:minmax(0,1fr);gap:20px;padding:30px 0}.studio-expanded .studio-chapter h3{font-size:22px;line-height:1.6}.studio-expanded .studio-manifesto{padding:24px 20px;margin:4px 0 30px;font-size:14px}.studio-expanded .studio-manifesto strong{font-size:21px}.studio-expanded .studio-mobile-break{display:block}.studio-expanded .studio-endnote{align-items:flex-start;flex-direction:column;gap:18px}.studio-expanded .studio-links{gap:24px}}
