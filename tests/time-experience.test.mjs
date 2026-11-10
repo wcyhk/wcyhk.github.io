@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep,SHIELD,shieldIntersection,cannonPacket,advanceSpin}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep,SHIELD,shieldIntersection,cannonPacket,advanceSpin,realmState}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -74,7 +74,7 @@ test('Actual articulated enemy contacts shatter islands once, across desktop and
   for(const aspect of [1.2,.48]){const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));world.update(0,0,0,.05,0,0,0);assert.equal(world.destruction.records.filter(r=>r.shattered).length,0);
     let firstDefence=null;for(let i=1;i<=640;i++){world.update(i*.0325,0,0,.05,0,0,i*.05);if(world.destruction.altarThreat&&firstDefence===null)firstDefence=i*.05;}
     const hits=world.destruction.records.filter(r=>r.shattered);assert.deepEqual([...new Set(hits.map(r=>r.hitBy))].sort(),[0,1,2]);assert.ok(firstDefence>15&&firstDefence<=32);for(const hit of hits){assert.equal(hit.group.visible,false);assert.equal(hit.fragments.visible,true);}
-    world.update(0,1,0,.05,7,12,32);for(const hit of hits){assert.equal(hit.group.visible,true);assert.equal(hit.fragments.visible,false);}
+    world.update(0,1,0,.05,7,12,32);for(const hit of hits){assert.equal(hit.group.visible,false);assert.equal(hit.fragments.visible,false);}assert.ok(world.reborn.palaces.every(p=>p.manifest.materials.every(m=>m.opacity===1)));
     world.update(0,0,0,.05,0,0,0);assert.ok(world.destruction.records.every(r=>!r.shattered&&r.hitAt===null&&r.group.visible));world.dispose();
   }
 });
@@ -202,4 +202,30 @@ test('Actual cannon fire hits the shield in both quality modes, and replay clear
 test('Core and accretion disk keep rotating with a paused star-flow clock in darkness and sunlight',()=>{
   assert.equal(advanceSpin(4,.05),4.05);assert.equal(advanceSpin(4,50),4.05);assert.equal(advanceSpin(4,.05,true),4);
   const w=createWorldScene(THREE,new THREE.PerspectiveCamera());for(const mask of [0,7]){w.update(0,mask===7?1:0,0,.05,mask,26,10,false,4);const a=w.starCore.rotation.y,d=w.disk.rotation.z;w.update(0,mask===7?1:0,0,.05,mask,26,10,false,5);assert.ok(w.starCore.rotation.y>a);assert.ok(w.disk.rotation.z>d);assert.equal(w.starCore.material.uniforms.uTime.value,0);}w.dispose();
+});
+
+
+test('The completed realm removes fractured terrain, restores full castles and reverts cleanly on replay',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,1.2,.15,160));w.update(0,1,0,.05,3,26,10);assert.deepEqual(realmState(26,3),{repair:0,ritual:0,clouds:0});assert.equal(w.mainIsland.visible,true);assert.equal(w.reborn.ascension.root.visible,false);
+  w.update(0,1,0,.05,7,26,10);assert.deepEqual(realmState(26,7),{repair:1,ritual:1,clouds:1});assert.equal(w.mainIsland.visible,false);assert.ok(w.destruction.records.every(r=>!r.group.visible&&!r.fragments.visible));assert.equal(w.reborn.ascension.progress,1);assert.equal(w.sea.material.uniforms.uRealm.value,1);assert.ok(w.reborn.palaces.every(p=>p.root.userData.completeCastle&&p.root.scale.x>1.2&&p.manifest.materials.every(m=>m.opacity===1)));
+  w.update(0,0,0,.05,0,0,0);assert.equal(w.mainIsland.visible,true);assert.ok(w.destruction.records.every(r=>r.group.visible));assert.equal(w.sea.material.uniforms.uRealm.value,0);assert.equal(w.reborn.ascension.root.visible,false);w.dispose();
+});
+
+test('Royal bridges remain fixed while revealing and every depth pass follows its actual mesh',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,1.2,.15,160));w.update(0,1,0,.05,7,2,20);w.scene.updateMatrixWorld();const bridges=w.reborn.ascension.bridges,snapshots=bridges.map(b=>b.group.matrixWorld.toArray());assert.equal(bridges.length,3);
+  for(const t of [4,8,11,26]){w.update(t,1,0,.05,7,t,20);w.scene.updateMatrixWorld();bridges.forEach((b,i)=>{assert.deepEqual(b.group.matrixWorld.toArray(),snapshots[i]);b.manifestation.meshes.forEach((m,k)=>assert.deepEqual(m.matrixWorld.toArray(),b.manifestation.passes[k].matrixWorld.toArray()));});}
+  assert.ok(bridges.every(b=>b.manifestation.materials.every(m=>m.opacity===1&&m.depthWrite)));w.dispose();
+});
+
+test('Summoning ornaments clear the three beacon bases and remain inside the restored platform',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());w.update(0,1,0,.05,7,26,20);w.scene.updateMatrixWorld();for(const gem of w.reborn.ascension.gems){const p=gem.getWorldPosition(new THREE.Vector3());assert.ok(Math.hypot(p.x,p.z+.1)<5.0);for(const beacon of BEACONS)assert.ok(Math.hypot(p.x-beacon.position[0],p.z-beacon.position[2])>1.1);}assert.ok(w.reborn.ascension.mandala.position.y>-.41);w.dispose();
+});
+
+test('Enlarged castles clear the background moon in desktop and portrait layouts',()=>{
+  for(const aspect of [1.2,.48]){const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));w.update(0,1,0,.05,7,26,20);w.scene.updateMatrixWorld();const moon=w.scene.children.find(o=>o.geometry?.parameters?.radius===5.7),point=moon.getWorldPosition(new THREE.Vector3());for(const p of w.reborn.palaces){const bounds=new THREE.Box3().setFromObject(p.root),nearest=bounds.clampPoint(point,new THREE.Vector3());assert.ok(nearest.distanceTo(point)>5.7);}w.dispose();}
+});
+
+
+test('Summoning light layers render after the solid transparent-list floor while retaining depth testing',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());w.update(0,1,0,.05,7,26,20);const floorOrder=Math.max(...w.reborn.floorManifest.meshes.map(m=>m.renderOrder));w.reborn.ascension.root.traverse(o=>{if(o.isMesh||o.isLine||o.isPoints){assert.ok(o.renderOrder>floorOrder);assert.equal(o.material.depthTest,true);}});w.dispose();
 });

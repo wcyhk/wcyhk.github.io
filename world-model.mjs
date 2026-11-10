@@ -19,6 +19,7 @@ export function dawnAmount(energy,mask){return mask===7?clamp((energy-.6)/.4,0,1
 export const REBIRTH_DURATION=26;
 const easeWindow=(value,start,end)=>{const t=clamp((value-start)/(end-start),0,1);return t*t*(3-2*t);};
 export const smootherStep=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10);};
+export function realmState(elapsed,mask){const t=mask===7?elapsed:0;return {repair:easeWindow(t,2,11),ritual:easeWindow(t,1.2,8),clouds:easeWindow(t,1,9)};}
 export const HOLY_ORIGIN=Object.freeze([0,3.9,-3.2]);
 export const SHIELD=Object.freeze({center:Object.freeze([0,-.42,-.1]),radii:Object.freeze([7.65,9.6,7.65])});
 export function shieldIntersection(start,target){

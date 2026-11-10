@@ -1,7 +1,7 @@
-import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=aegis-cannon-20261110';
+import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep,realmState} from './world-model.mjs?v=golden-realm-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createIslandDestruction} from './world-destruction.mjs?v=aegis-cannon-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=aegis-cannon-20261110';
+import {createIslandDestruction} from './world-destruction.mjs?v=golden-realm-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=golden-realm-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -11,7 +11,7 @@ const uvVertex=`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix
 
 export function createWorldScene(THREE,camera){
   const rnd=seededRandom(10312026),scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x10182d,.018);
-  const uniforms={time:{value:0},energy:{value:0},pulse:{value:0},dawn:{value:0},camera:{value:camera.position}};
+  const uniforms={time:{value:0},energy:{value:0},pulse:{value:0},dawn:{value:0},realm:{value:0},camera:{value:camera.position}};
   const surfaces=createSurfaceKit(THREE),surface={map:surfaces.map,normalMap:surfaces.normalMap,normalScale:new THREE.Vector2(.4,.4),roughnessMap:surfaces.roughnessMap};
   const stone=new THREE.MeshStandardMaterial({...surface,color:0x8895a0,roughness:.86,metalness:.08,envMapIntensity:.6});
   const dark=new THREE.MeshPhysicalMaterial({...surface,color:0x344b62,metalness:.6,roughness:.26,clearcoat:.4,clearcoatRoughness:.22,envMapIntensity:.9});
@@ -25,10 +25,10 @@ export function createWorldScene(THREE,camera){
   const coreLight=new THREE.PointLight(0xffba76,25,18,2);coreLight.position.set(0,3,-1.5);scene.add(coreLight);
 
   const sky=new THREE.Mesh(new THREE.SphereGeometry(75,32,20),new THREE.ShaderMaterial({
-    side:THREE.BackSide,depthWrite:false,uniforms:{uTime:uniforms.time,uEnergy:uniforms.energy,uDawn:uniforms.dawn},
+    side:THREE.BackSide,depthWrite:false,uniforms:{uTime:uniforms.time,uEnergy:uniforms.energy,uDawn:uniforms.dawn,uRealm:uniforms.realm},
     vertexShader:`varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec3 vDir;uniform float uTime,uEnergy,uDawn;${noiseGLSL}
-    void main(){vec3 d=normalize(vDir);float h=d.y;vec2 p=vec2(atan(d.z,d.x),h);float cloud=fbm(p*vec2(2.6,5.)+vec2(uTime*.009,0.));vec3 col=mix(vec3(.018,.029,.067),vec3(.095,.135,.22),exp(-abs(h-.08)*6.));float dawn=exp(-pow((h-.075)*6.,2.));col+=vec3(.16,.075,.055)*dawn*(.4+.6*cloud);float aurora=pow(max(0.,1.-abs(h-(.30+sin(p.x*3.+cloud*1.8+uTime*.012)*.11))/.14),3.);col+=mix(vec3(.025,.12,.15),vec3(.15,.07,.19),cloud)*aurora*(.5+uEnergy*.9);col+=vec3(.18,.065,.012)*uDawn*exp(-abs(h-.12)*4.);col+=cloud*.016;col*=.48;gl_FragColor=vec4(col,1.);}`,
+    fragmentShader:`varying vec3 vDir;uniform float uTime,uEnergy,uDawn,uRealm;${noiseGLSL}
+    void main(){vec3 d=normalize(vDir);float h=d.y;vec2 p=vec2(atan(d.z,d.x),h);float cloud=fbm(p*vec2(2.6,5.)+vec2(uTime*.009,0.));vec3 col=mix(vec3(.018,.029,.067),vec3(.095,.135,.22),exp(-abs(h-.08)*6.));float dawn=exp(-pow((h-.075)*6.,2.));col+=vec3(.16,.075,.055)*dawn*(.4+.6*cloud);float aurora=pow(max(0.,1.-abs(h-(.30+sin(p.x*3.+cloud*1.8+uTime*.012)*.11))/.14),3.);col+=mix(vec3(.025,.12,.15),vec3(.15,.07,.19),cloud)*aurora*(.5+uEnergy*.9);col+=vec3(.18,.065,.012)*uDawn*exp(-abs(h-.12)*4.);col+=cloud*.016;col=mix(col,mix(vec3(.19,.075,.035),vec3(.78,.32,.095),cloud),uRealm*(1.-smoothstep(-.2,.32,h))*.72);col*=.48;gl_FragColor=vec4(col,1.);}`,
   }));sky.renderOrder=-20;scene.add(sky);
 
   // A fractured moon hangs beyond the last inhabited edge.
@@ -37,7 +37,7 @@ export function createWorldScene(THREE,camera){
     vertexShader:`varying vec2 vUv;varying vec3 vN;void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
     fragmentShader:`varying vec2 vUv;varying vec3 vN;uniform float uTime,uEnergy;${noiseGLSL}
     void main(){float n=fbm(vUv*vec2(27.,15.));float fine=noise(vUv*180.);float light=dot(normalize(vN),normalize(vec3(-.86,.24,.28)));float terminator=smoothstep(-.2,.62,light);vec3 shade=mix(vec3(.019,.041,.074),vec3(.28,.39,.49),terminator);shade*=.28+n*.8;float vein=pow(max(0.,1.-abs(n-.48)*38.),5.);shade+=vec3(.55,.23,.075)*vein*(.12+uEnergy*.85)*terminator;shade+=fine*.012;gl_FragColor=vec4(shade,1.);}`,
-  }));moon.position.set(7.2,7.6,-20);moon.rotation.z=-.3;scene.add(moon);
+  }));moon.position.set(11.5,10.5,-29);moon.rotation.z=-.3;scene.add(moon);
   const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(5.88,48,32),new THREE.ShaderMaterial({
     transparent:true,depthWrite:false,side:THREE.BackSide,blending:THREE.AdditiveBlending,
     uniforms:{uCamera:uniforms.camera,uEnergy:uniforms.energy},
@@ -137,11 +137,10 @@ export function createWorldScene(THREE,camera){
   const starsPositions=new Float32Array(1700*3);for(let i=0;i<1700;i++){const a=rnd()*Math.PI*2,h=rnd()*.96;const r=50+ rnd()*10;starsPositions.set([Math.cos(a)*r*Math.sqrt(1-h*h),h*r,Math.sin(a)*r],i*3);}
   const starsGeo=new THREE.BufferGeometry();starsGeo.setAttribute('position',new THREE.BufferAttribute(starsPositions,3));scene.add(new THREE.Points(starsGeo,new THREE.PointsMaterial({color:0xb8d4e6,size:.045,sizeAttenuation:true,transparent:true,opacity:.8})));
 
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(130,130,1,1),new THREE.ShaderMaterial({
-    transparent:true,uniforms:{uTime:uniforms.time,uEnergy:uniforms.energy},
-    vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-    fragmentShader:`varying vec3 vW;uniform float uTime,uEnergy;${noiseGLSL}void main(){float n=fbm(vW.xz*.19+vec2(uTime*.008,0.));float ripple=pow(max(0.,sin(length(vW.xz)*.65-uTime*.12+n*3.)),12.);float road=exp(-abs(vW.x)*.7)*exp(-abs(vW.z+1.)*.055);vec3 col=vec3(.022,.052,.075)+vec3(.08,.1,.11)*n;col+=vec3(.34,.18,.07)*road*(.25+uEnergy*.5);col+=vec3(.012,.027,.039)*ripple;float fade=1.-smoothstep(18.,65.,length(vW.xz));gl_FragColor=vec4(col,fade*.9);}`,
-  }));sea.rotation.x=-Math.PI/2;sea.position.y=-4.8;scene.add(sea);
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(130,130),new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uTime:uniforms.time,uRealm:uniforms.realm},vertexShader:`varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+    fragmentShader:`varying vec3 vW;uniform float uTime,uRealm;${noiseGLSL}void main(){vec2 p=vW.xz*.105+vec2(uTime*.008,0.);float body=fbm(p*1.7),billow=fbm(p*3.2+body*2.),detail=fbm(p*7.+billow);float density=clamp(body*.52+billow*.36+detail*.12,0.,1.);float ridge=pow(clamp(1.-abs(density-.56)*3.,0.,1.),3.);vec3 cold=vec3(.022,.052,.075)+vec3(.08,.1,.11)*density;vec3 warm=mix(vec3(.22,.065,.018),vec3(1.12,.54,.14),smoothstep(.2,.78,density));warm+=vec3(.55,.34,.12)*ridge;float fade=1.-smoothstep(22.,65.,length(vW.xz));gl_FragColor=vec4(mix(cold,warm,uRealm),fade*(.72+density*.22));}` }));sea.rotation.x=-Math.PI/2;sea.position.y=-4.8;sea.renderOrder=-3;scene.add(sea);
+  const cloudBankGeo=new THREE.BufferGeometry(),bankCount=110,bankPos=new Float32Array(bankCount*3),bankSeeds=new Float32Array(bankCount*3);for(let i=0;i<bankCount;i++){const a=rnd()*Math.PI*2,r=5+rnd()*40;bankPos.set([Math.cos(a)*r,-4.5-rnd()*3,Math.sin(a)*r-6],i*3);bankSeeds.set([rnd(),rnd(),rnd()],i*3);}cloudBankGeo.setAttribute('position',new THREE.BufferAttribute(bankPos,3));cloudBankGeo.setAttribute('aSeed',new THREE.BufferAttribute(bankSeeds,3));
+  const cloudBank=new THREE.Points(cloudBankGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uTime:uniforms.time,uRealm:uniforms.realm,uRatio:{value:1}},vertexShader:`attribute vec3 aSeed;uniform float uTime,uRatio;varying float vSeed;void main(){vec3 p=position;p.x+=sin(uTime*.015+aSeed.x*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((100.+aSeed.y*180.)*uRatio*10./max(1.,-mv.z),1.,220.);vSeed=aSeed.z;}`,fragmentShader:`varying float vSeed;uniform float uRealm;void main(){vec2 p=(gl_PointCoord-.5)*vec2(2.,2.8);float r=length(p),a=exp(-r*r*3.)*(1.-smoothstep(.6,1.,r));vec3 cold=vec3(.1,.16,.23),warm=mix(vec3(.7,.25,.055),vec3(1.55,1.05,.48),vSeed);gl_FragColor=vec4(mix(cold,warm,uRealm),a*(.08+uRealm*.25));}`}));cloudBank.frustumCulled=false;cloudBank.renderOrder=-2;scene.add(cloudBank);
 
   const floats=new THREE.Group(),floatData=[];
   for(let i=0;i<30;i++){const a=rnd()*Math.PI*2,r=7+rnd()*12;const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(.05+rnd()*.14,0),i%5===0?gold:dark);mesh.position.set(Math.cos(a)*r,-1+rnd()*8,Math.min(1.5,Math.sin(a)*r-10));mesh.scale.y=1+rnd()*2;mesh.rotation.set(rnd()*3,rnd()*3,rnd()*3);floats.add(mesh);floatData.push({mesh,y:mesh.position.y,phase:rnd()*6});}scene.add(floats);
@@ -150,26 +149,27 @@ export function createWorldScene(THREE,camera){
   const destruction=createIslandDestruction(THREE,scene,sideIslands,stone);
   const labelPosition=new THREE.Vector3();let lastShadowPhase='';
   return {
-    scene,beacons,pickTargets,reborn,destruction,gate,starCore,disk,mainIsland,stairs,
+    scene,beacons,pickTargets,reborn,destruction,gate,starCore,disk,mainIsland,stairs,sea,cloudBank,
     environment(renderer){scene.environment=surfaces.environment(renderer);},
     markerPositions(){return beacons.map(b=>b.group.localToWorld(labelPosition.set(0,1.6,0)).clone());},
-    quality(light,ratio){destruction.quality(light);reborn.quality(light,ratio);dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
+    quality(light,ratio){cloudBankGeo.setDrawRange(0,light?60:bankCount);cloudBank.material.uniforms.uRatio.value=ratio;destruction.quality(light);reborn.quality(light,ratio);dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
     update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0,siegeElapsed=0,reduced=false,spinElapsed=time){
-      const story=reborn.update(time,rebirthElapsed,mask,siegeElapsed,reduced);
+      const story=reborn.update(time,rebirthElapsed,mask,siegeElapsed,reduced,spinElapsed);const renewal=realmState(rebirthElapsed,mask);uniforms.realm.value=renewal.clouds;
       uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=story.sun;uniforms.dawn.value=dawn;
       const spread=cosmicSpread(camera.aspect);
       destruction.update(siegeElapsed,rebirthElapsed,mask,reborn.ancients.collisionSpheres(),spread,camera.aspect<.8);
       const shadowPhase=`${destruction.records.filter(r=>r.shattered).length}:${mask!==7?0:rebirthElapsed<.65?1:rebirthElapsed<7.8?2:3}`;if(shadowPhase!==lastShadowPhase){key.shadow.needsUpdate=true;lastShadowPhase=shadowPhase;}
+      if(renewal.repair>=1)for(const island of destruction.records)island.group.visible=false;mainIsland.visible=renewal.repair<1;
       ruins.position.y=0;ruins.visible=story.sun<1;stairs.visible=story.sun<1;
       mainIsland.children[0].visible=story.sun<1;
       topMaterial.color.setRGB(1+story.sanctum*.5,1+story.sanctum*.4,1+story.sanctum*.23);
-      scene.fog.color.setRGB(.063+story.sun*.02,.094+story.sun*.026,.176+story.sun*.025);
+      scene.fog.color.setRGB(.063+renewal.clouds*.13,.094+renewal.clouds*.025,.176-renewal.clouds*.075);
       gate.rotation.z=spinElapsed*.035;starCore.rotation.y=spinElapsed*.16;starCore.rotation.z=.12;gateAura.material.opacity=.12+energy*.12+dawn*.3;disk.rotation.z=.1+spinElapsed*.14;orbital.rotation.z=.28+spinElapsed*.055;orbital2.rotation.y=.5-spinElapsed*.04;coreLight.intensity=3+energy*10+dawn*65;key.intensity=2.5+dawn*3.3;key.color.set(dawn>.01?0xffd09a:0xc8d6e5);
       for(const p of prominences)p.loop.material.opacity=dawn*(.35+Math.sin(time*.17+p.phase)*.12);
       for(let i=0;i<gateParts.length;i++){const amount=Math.sin(time*.12+i)*.035+(1-energy)*.075;gateParts[i].position.x=Math.cos(i*Math.PI*2/9)*amount;gateParts[i].position.y=Math.sin(i*Math.PI*2/9)*amount;}
       for(let i=0;i<beacons.length;i++){const b=beacons[i];const ground=-.48+islandHeight(BEACONS[i].position[0],BEACONS[i].position[2]);b.group.position.y=ground+(-.33-ground)*story.sun;b.lit+=(Number(!!(mask&(1<<i)))-b.lit)*(1-Math.exp(-dt*3.4));b.gem.rotation.y=time*.32+i;b.hoop.rotation.y=time*.16+i;b.beamMat.uniforms.uLit.value=b.lit;b.point.intensity=1.1+b.lit*8;b.aura.material.opacity=.32+b.lit*.45;b.aura.scale.setScalar(1.15+b.lit*.7);b.gemMat.color.set(BEACONS[i].color);b.gemMat.emissiveIntensity=.35+b.lit*1.4;}
       bridgeMat.opacity=energy*.38;
-      for(const f of floatData){f.mesh.position.y=f.y+Math.sin(time*.14+f.phase)*.2;f.mesh.rotation.y=time*.035+f.phase;}
+      for(const f of floatData){f.mesh.visible=renewal.repair<1;f.mesh.position.y=f.y+Math.sin(time*.14+f.phase)*.2;f.mesh.rotation.y=time*.035+f.phase;}
       for(const f of stairData)f.block.position.y=f.y+Math.sin(time*.2+f.phase)*.018*(1-energy);
       return story;
     },

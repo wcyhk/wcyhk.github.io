@@ -1,4 +1,4 @@
-import {SHIELD,seededRandom} from './world-model.mjs?v=aegis-cannon-20261110';
+import {SHIELD,seededRandom} from './world-model.mjs?v=golden-realm-20261110';
 
 export function createAltarShield(THREE,scene,camera){
   const center=new THREE.Vector3(...SHIELD.center),radii=new THREE.Vector3(...SHIELD.radii),clock={value:0},pulse={value:0},dawn={value:0},random=seededRandom(721),root=new THREE.Group();root.name='Altar aegis';scene.add(root);
