@@ -1,7 +1,7 @@
-import {BEACONS,islandHeight,seededRandom,cosmicSpread} from './world-model.mjs?v=creature-reveal-20261110';
+import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=holy-ascent-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createIslandDestruction} from './world-destruction.mjs?v=creature-reveal-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=creature-reveal-20261110';
+import {createIslandDestruction} from './world-destruction.mjs?v=holy-ascent-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=holy-ascent-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -69,9 +69,9 @@ export function createWorldScene(THREE,camera){
     return group;
   }
   const mainIsland=island(6.8,3.9,400);mainIsland.position.y=-.5;scene.add(mainIsland);
-  const sideIslands=[[-10,-.4,-9,2.1], [10.5,.3,-10.5,2.7],[-17,-1.8,-18,2.1],[17,-1.0,-24,3.8],[1,-.7,-19,2.2]].map((v,i)=>{const g=island(v[3],v[3]*.75,700+i);g.position.set(v[0],v[1],v[2]);scene.add(g);return {group:g,x:v[0],y:v[1],z:v[2],radius:v[3],depth:v[3]*.75};});
+  const sideIslands=[[-10,-.4,-9,2.1], [10.5,.3,-10.5,2.7],[-17,-1.8,-18,2.1],[17,-1.0,-24,3.8],[-5.5,-.7,-19,2.2]].map((v,i)=>{const g=island(v[3],v[3]*.75,700+i);g.position.set(v[0],v[1],v[2]);scene.add(g);return {group:g,x:v[0],y:v[1],z:v[2],radius:v[3],depth:v[3]*.75};});
   const stairs=new THREE.Group(),stairData=[];
-  for(let i=0;i<19;i++){const z=5.2-i*.47,x=Math.sin(i*.24)*.45-.3,y=-.23+Math.sin(i*.17)*.1;const block=new THREE.Mesh(surfaces.bevelGeometry,i%4===0?gold:ivory);block.scale.set(1.05,.15,.37);block.position.set(x,y,z);block.rotation.y=Math.sin(i*.7)*.1;stairs.add(block);stairData.push({block,y,phase:i*.4});const line=new THREE.Mesh(new THREE.BoxGeometry(.78,.012,.012),luminous);line.position.set(x,y+.08,z+.185);stairs.add(line);}scene.add(stairs);
+  for(let i=0;i<19;i++){const {x,z}=processionalStep(i),y=-.23+Math.sin(i*.17)*.1;const block=new THREE.Mesh(surfaces.bevelGeometry,i%4===0?gold:ivory);block.scale.set(1.05,.15,.37);block.position.set(x,y,z);block.rotation.y=Math.sin(i*.7)*.1;stairs.add(block);stairData.push({block,y,phase:i*.4});const line=new THREE.Mesh(new THREE.BoxGeometry(.78,.012,.012),luminous);line.position.set(x,y+.08,z+.185);stairs.add(line);}scene.add(stairs);
   const ruins=new THREE.InstancedMesh(surfaces.bevelGeometry,stone,34),ruinDummy=new THREE.Object3D();
   let ruinCount=0;for(let i=0;i<34;i++){const a=rnd()*Math.PI*2,r=3.5+rnd()*2.7,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)<1.3)continue;const h=.25+rnd()*1.15;ruinDummy.position.set(x,-.45+islandHeight(x,z)+h*.5,z);ruinDummy.scale.set(.26+rnd()*.5,h,.3+rnd()*.5);ruinDummy.rotation.set((rnd()-.5)*.3,rnd()*3,(rnd()-.5)*.25);ruinDummy.updateMatrix();ruins.setMatrixAt(ruinCount++,ruinDummy.matrix);}ruins.count=ruinCount;scene.add(ruins);
 

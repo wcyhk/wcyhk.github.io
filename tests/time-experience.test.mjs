@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -89,7 +89,7 @@ test('All three sculpted face centres fit the initial desktop and portrait compo
   for(const [aspect,fov,position] of [[980/812,43,[1.5,6.9,18]],[375/810,48,[0,7.4,26]]]){
     const camera=new THREE.PerspectiveCamera(fov,aspect,.15,160);camera.position.set(...position);camera.lookAt(0,1.2,-1.8);camera.updateMatrixWorld();const world=createWorldScene(THREE,camera);world.update(0,0,0,.05,0,0,0);world.scene.updateMatrixWorld();
     const blockers=[world.scene.children.find(o=>o.geometry?.parameters?.radius===5.7),world.gate.children.find(o=>o.geometry?.parameters?.radius===2.55)],ray=new THREE.Raycaster();
-    for(const actor of world.reborn.ancients.actors){const worldFace=actor.head.getWorldPosition(new THREE.Vector3()),face=worldFace.clone().project(camera);assert.ok(Math.abs(face.x)<.95&&Math.abs(face.y)<.95,`${actor.group.name}: ${face.toArray()}`);ray.setFromCamera(new THREE.Vector2(face.x,face.y),camera);const blocker=ray.intersectObjects(blockers,false)[0];assert.ok(!blocker||blocker.distance>camera.position.distanceTo(worldFace),`${actor.group.name} face must not be hidden by the moon or gate on arrival.`);}world.dispose();
+    for(const siege of [0,12,20,26]){world.update(siege*.65,0,0,.05,0,0,siege);world.scene.updateMatrixWorld();for(const actor of world.reborn.ancients.actors){const worldFace=actor.head.getWorldPosition(new THREE.Vector3()),face=worldFace.clone().project(camera);assert.ok(Math.abs(face.x)<.95&&Math.abs(face.y)<.95,`${actor.group.name}: ${face.toArray()}`);ray.setFromCamera(new THREE.Vector2(face.x,face.y),camera);const blocker=ray.intersectObjects(blockers,false)[0];assert.ok(!blocker||blocker.distance>camera.position.distanceTo(worldFace),`${actor.group.name} face must not be hidden by the moon or gate during approach at ${siege}s.`);}}world.dispose();
   }
 });
 
@@ -129,4 +129,23 @@ test('All three physical beacons are in view and raycastable on initial desktop 
 test('World title and accessible biography are readable without executing WebGL',()=>{
   const html=readFileSync(new URL(`${base}index.html`,import.meta.url),'utf8');assert.ok(html.includes('世界的盡頭'));assert.ok(!html.includes('時間的盡頭'));assert.ok(html.includes('id="studio-profile"'));assert.ok(html.includes('專業資格與學歷'));assert.ok(html.includes('STEM 陀螺'));
   for(const b of BEACONS)assert.ok(html.includes(`aria-label="喚醒${b.name}界標"`));assert.ok(html.includes('role="status" aria-live="polite"'));assert.ok(!html.includes('ANSON WONG'));
+});
+
+
+test('The shared processional path clears every beacon foundation in both worlds',()=>{
+  for(let i=0;i<19;i++){const p=processionalStep(i);for(const b of BEACONS){const dx=Math.max(0,Math.abs(p.x-b.position[0])-.55),dz=Math.max(0,Math.abs(p.z-b.position[2])-.24);assert.ok(Math.hypot(dx,dz)>.75,`Step ${i} intersects ${b.id}`);}}
+  const world=createWorldScene(THREE,new THREE.PerspectiveCamera());const blocks=world.stairs.children.filter(o=>o.geometry===world.stairs.children[0].geometry);assert.equal(blocks.length,19);blocks.forEach((o,i)=>{const p=processionalStep(i);assert.equal(o.position.x,p.x);assert.equal(o.position.z,p.z);});world.dispose();
+});
+
+test('Awakening first flies close at eye level, then pulls back and rises to an overhead view',()=>{
+  for(const phone of [false,true]){const pos=phone?[0,7.4,26]:[1.5,6.9,18],target=[0,1.2,-1.8],keys=awakeningCameraKeys(pos,target,phone);assert.deepEqual(keys[0].position,pos);assert.notEqual(keys[0].position,pos);
+    const distance=k=>Math.hypot(...k.position.map((v,i)=>v-k.target[i])),near=keys[1],end=keys.at(-1);assert.ok(distance(near)<distance(keys[0]));assert.ok(near.position[1]-near.target[1]<2.1);assert.ok(Math.atan2(end.position[1]-end.target[1],Math.hypot(end.position[0]-end.target[0],end.position[2]-end.target[2]))>.8);
+    for(let i=1;i<keys.length;i++){assert.ok(keys[i].at>keys[i-1].at);assert.ok(distance(keys[i])>=10&&distance(keys[i])<40);if(i>1){assert.ok(distance(keys[i])>distance(keys[i-1]));assert.ok(keys[i].position[1]>keys[i-1].position[1]);}}assert.equal(end.at,12);
+  }
+});
+
+test('The dragon reaches the front line before either layout triggers the altar guard',()=>{
+  for(const aspect of [1.2,.48]){const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));let guard=null;for(let t=0;t<=32;t+=.05){world.update(t*.65,0,0,.05,0,0,t);if(world.destruction.altarThreat){guard=t;break;}}
+    assert.ok(guard>15);const dragon=enemyPose(2,guard,0,0),elder=enemyPose(0,guard,0,0);assert.ok(Math.hypot(dragon.position[0],dragon.position[2])<=Math.hypot(elder.position[0],elder.position[2])+1);assert.ok(dragon.position[2]>-7);assert.deepEqual([...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort(),[0,1,2]);world.dispose();
+  }
 });

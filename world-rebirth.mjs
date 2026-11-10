@@ -1,6 +1,6 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread} from './world-model.mjs?v=creature-reveal-20261110';
-import {createAncients} from './world-creatures.mjs?v=creature-reveal-20261110';
-import {createManifestation} from './world-reveal.mjs?v=creature-reveal-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep} from './world-model.mjs?v=holy-ascent-20261110';
+import {createAncients} from './world-creatures.mjs?v=holy-ascent-20261110';
+import {createManifestation} from './world-reveal.mjs?v=holy-ascent-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -17,7 +17,9 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   const gilt=new THREE.MeshStandardMaterial({color:0xe5bc6b,metalness:.84,roughness:.23,envMapIntensity:1.5});
   const blue=new THREE.MeshStandardMaterial({color:0x275675,metalness:.48,roughness:.27});
   const lightMat=new THREE.MeshBasicMaterial({color:new THREE.Color(2.1,1.5,.65),toneMapped:false});
-  const cylinder=new THREE.CylinderGeometry(1,1,1,16),dome=new THREE.SphereGeometry(1,28,16,0,Math.PI*2,0,Math.PI/2);
+  const cylinder=new THREE.CylinderGeometry(1,1,1,24),dome=new THREE.SphereGeometry(1,36,24,0,Math.PI*2,0,Math.PI/2);
+  const pedimentShape=new THREE.Shape();pedimentShape.moveTo(-2.42,0);pedimentShape.lineTo(2.42,0);pedimentShape.lineTo(0,.94);pedimentShape.closePath();
+  const pediment=new THREE.ExtrudeGeometry(pedimentShape,{depth:.22,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:2,steps:1}),doorArch=new THREE.TorusGeometry(.65,.08,8,40,Math.PI);
   function batchBuilder(group){const pools=new Map(),dummy=new THREE.Object3D();return {add(geo,mat,p,s,r=[0,0,0]){const key=geo.uuid+mat.uuid;if(!pools.has(key))pools.set(key,{geo,mat,entries:[]});pools.get(key).entries.push({p,s,r});},finish(){for(const {geo,mat,entries} of pools.values()){const inst=new THREE.InstancedMesh(geo,mat,entries.length);entries.forEach((e,i)=>{dummy.position.set(...e.p);dummy.scale.set(...e.s);dummy.rotation.set(...e.r);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);});inst.castShadow=false;inst.receiveShadow=true;group.add(inst);}}};}
   function palace(x,y,z,size,index){
     const root=new THREE.Group();heavens.add(root);root.position.set(x,y,z);root.scale.setScalar(size);
@@ -25,12 +27,20 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
     const b={add(geo,mat,p,s,r){builders[p[1]<.65?0:p[1]>3.06?2:1].add(geo,mat,p,s,r);},finish(){builders.forEach(b=>b.finish());}},box=surfaces.bevelGeometry;
     for(let k=0;k<3;k++)b.add(cylinder,marble,[0,k*.16,0],[3.0-k*.22,.17,2.4-k*.18]);
     b.add(cylinder,gilt,[0,.55,0],[2.65,.08,2.05]);b.add(box,marble,[0,1.65,0],[2.9,2.2,1.65]);b.add(box,blue,[0,1.65,.85],[1.25,1.8,.035]);
-    for(let side of [-1,1])for(let j=0;j<5;j++){const x=side*1.9,z=-1.55+j*.77;b.add(cylinder,marble,[x,1.7,z],[.13,2.25,.13]);for(const h of [.68,2.75])b.add(box,gilt,[x,h,z],[.43,.12,.43]);}
-    for(let j=0;j<7;j++){const x=-2.0+j*.67;b.add(cylinder,marble,[x,1.7,1.65],[.12,2.25,.12]);b.add(box,gilt,[x,2.75,1.65],[.4,.11,.4]);}
+    function column(x,z){b.add(cylinder,marble,[x,1.7,z],[.17,2.12,.17]);for(const h of [.65,2.68]){b.add(box,marble,[x,h,z],[.48,.15,.48]);b.add(cylinder,gilt,[x,h+.11,z],[.235,.07,.235]);}for(const s of [-1,1])b.add(sphere,gilt,[x+s*.19,2.76,z],[.085,.085,.085]);for(let k=0;k<8;k++){const a=k*Math.PI/4;b.add(cylinder,gilt,[x+Math.cos(a)*.173,1.7,z+Math.sin(a)*.173],[.008,1.85,.008]);}}
+    for(let side of [-1,1])for(let j=0;j<5;j++)column(side*1.9,-1.55+j*.77);
+    for(let j=0;j<6;j++)column(-2.0+j*.8,1.65);
     b.add(box,marble,[0,2.92,0],[4.6,.22,3.85]);b.add(box,gilt,[0,3.07,0],[4.65,.08,3.9]);
+    b.add(pediment,marble,[0,3.13,1.97],[1,1,1]);b.add(box,gilt,[0,3.13,2.22],[4.85,.06,.055]);
+    for(const side of [-1,1])b.add(box,gilt,[side*1.21,3.6,2.22],[2.6,.055,.055],[0,0,-side*.37]);
+    b.add(cylinder,gilt,[0,3.52,2.24],[.23,.045,.23],[Math.PI/2,0,0]);b.add(sphere,blue,[0,3.52,2.28],[.13,.13,.025]);
+    // The recessed entrance and its stone arch read as architecture rather than a flat facade.
+    b.add(doorArch,gilt,[0,2.03,.93],[1,1,1]);for(const side of [-1,1]){b.add(box,marble,[side*.72,1.42,.91],[.16,1.25,.2]);b.add(box,gilt,[side*.61,1.42,1.025],[.04,1.25,.025]);}
+    for(let j=0;j<9;j++){const x=-2.08+j*.52;b.add(box,gilt,[x,2.96,1.95],[.12,.13,.035]);}
+    for(const side of [-1,1]){b.add(box,marble,[side*1.51,1.62,-.2],[.22,2.1,2.7]);for(let j=0;j<4;j++){const z=-1.17+j*.67;b.add(box,blue,[side*1.635,1.72,z],[.03,.95,.3]);b.add(box,gilt,[side*1.66,2.26,z],[.03,.065,.36]);}}
     b.add(dome,marble,[0,3.08,-.15],[1.65,1.45,1.5]);
     for(let k=0;k<8;k++){const az=k/8*Math.PI*2,points=[];for(let j=0;j<=18;j++){const t=j/18*Math.PI/2;points.push(new THREE.Vector3(Math.sin(t)*Math.cos(az)*1.67,3.08+Math.cos(t)*1.47,-.15+Math.sin(t)*Math.sin(az)*1.52));}b.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,.018,6,false),gilt,[0,0,0],[1,1,1]);}b.add(cone,gilt,[0,4.88,-.15],[.15,.7,.15]);b.add(sphere,lightMat,[0,5.28,-.15],[.12,.12,.12]);
-    for(const s of [-1,1]){b.add(cylinder,marble,[s*3.25,2.0,-.8],[.49,3.3,.49]);b.add(dome,gilt,[s*3.25,3.65,-.8],[.65,.65,.65]);b.add(cone,gilt,[s*3.25,4.45,-.8],[.1,.55,.1]);for(let j=0;j<3;j++)b.add(box,gilt,[s*3.25,1.4+j*.6,-.295],[.15,.23,.025]);}
+    for(const s of [-1,1]){b.add(cylinder,marble,[s*3.25,2.0,-.8],[.49,3.3,.49]);for(const h of [.45,.65,3.35,3.56])b.add(cylinder,gilt,[s*3.25,h,-.8],[.57,.11,.57]);b.add(dome,gilt,[s*3.25,3.65,-.8],[.65,.65,.65]);b.add(cone,gilt,[s*3.25,4.45,-.8],[.1,.55,.1]);for(let j=0;j<3;j++){b.add(box,blue,[s*3.25,1.4+j*.6,-.295],[.22,.34,.025]);b.add(box,gilt,[s*3.25,1.62+j*.6,-.28],[.28,.04,.03]);}}
     // Front approach / miniature stairs and balustrades give the temples a readable scale.
     for(let j=0;j<7;j++)b.add(box,marble,[0,.48-j*.065,2.05+j*.22],[1.4,.13,.3]);
     for(const s of [-1,1])for(let j=0;j<8;j++){b.add(cylinder,marble,[s*(1.3+j*.2),.85,2.12],[.045,.5,.045]);}
@@ -39,7 +49,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
     const constructionRing=mesh(root,new THREE.TorusGeometry(3.4,.018,6,120),ringMaterial,[0,.4,0],[1,1,1],[Math.PI/2,0,0]);
     return {root,x,y,scale:size,index,halo,layers,constructionRing};
   }
-  const palaces=[palace(-11,1.0,-13,1.15,0),palace(11.5,.7,-13.8,1.1,1),palace(1,3,-29,1.1,2)];
+  const palaces=[palace(-11,1.0,-13,1.15,0),palace(11.5,.7,-13.8,1.1,1),palace(-5.5,3,-29,1.1,2)];
   palaces.forEach(p=>{p.halo.userData.revealIgnore=true;p.constructionRing.userData.revealIgnore=true;p.manifest=createManifestation(THREE,p.root);});
 
   const cloudGeo=new THREE.BufferGeometry(),cloudCount=144,cloudPos=new Float32Array(cloudCount*3),cloudSeed=new Float32Array(cloudCount*3);
@@ -58,8 +68,8 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   for(let j=0;j<3;j++){const r=4.95+j*.15;b.add(new THREE.TorusGeometry(r,.025,5,128),gilt,[0,-.015,-.1],[1,1,1],[Math.PI/2,0,0]);}
   for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=Math.cos(a)*5.5,z=Math.sin(a)*5.5-.1;if(z>2&&Math.abs(x)<2.5)continue;
     b.add(cylinder,marble,[x,.05,z],[.4,.25,.4]);b.add(cylinder,marble,[x,.85,z],[.17,1.4,.17]);b.add(cylinder,gilt,[x,1.6,z],[.32,.12,.32]);b.add(sphere,lightMat,[x,1.83,z],[.12,.12,.12]);}
-  for(const s of [-1,1]){b.add(box,marble,[s*4.7,1.85,-2.6],[.62,4.2,.62]);b.add(box,gilt,[s*4.7,3.95,-2.6],[.91,.16,.91]);b.add(cone,gilt,[s*4.7,4.5,-2.6],[.3,.9,.3]);}
-  for(let i=0;i<19;i++){const z=5.2-i*.47,x=Math.sin(i*.24)*.45-.3;b.add(box,i%4===0?gilt:marble,[x,-.06,z],[1.05,.018,.37]);}
+  for(const s of [-1,1]){b.add(box,marble,[s*4.7,1.85,-2.6],[.72,4.2,.72]);for(const h of [.0,.18,3.7,3.95])b.add(box,gilt,[s*4.7,h,-2.6],[.98,.12,.98]);for(const side of [-1,1]){b.add(box,gilt,[s*4.7+side*.29,1.9,-2.22],[.035,3.25,.025]);}b.add(box,blue,[s*4.7,2,-2.22],[.29,2.6,.025]);b.add(cone,gilt,[s*4.7,4.5,-2.6],[.3,.9,.3]);}
+  for(let i=0;i<19;i++){const {x,z}=processionalStep(i);b.add(box,i%4===0?gilt:marble,[x,-.06,z],[1.05,.018,.37]);}
   b.finish();
   const floorGroup=new THREE.Group();scene.add(floorGroup);const repairPieces=[],sectorGeometry=new THREE.CylinderGeometry(5.72,5.72,.065,8,1,false,0,Math.PI*2/12-.018);
   for(let i=0;i<12;i++){const tile=mesh(floorGroup,sectorGeometry,blue,[0,-.4425,-.1],[1,1,1],[0,i/12*Math.PI*2,0]);tile.name=`Sanctuary floor sector ${i+1}`;repairPieces.push(tile);}
@@ -89,7 +99,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   for(let i=0;i<menaceCount;i++)menaceSeeds.set([i%3,random(),random(),random()],i*4);
   menaceGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(menaceCount*3),3));menaceGeo.setAttribute('aP',new THREE.BufferAttribute(menaceSeeds,4));
   const menace=new THREE.Points(menaceGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uThreat:u.threat,uClock:u.enemyClock,uCleanse:u.cleanse,uSources:u.sources,uRatio:u.ratio},
-    vertexShader:`attribute vec4 aP;uniform float uThreat,uClock,uCleanse,uRatio;uniform vec3 uSources[3];varying float vA;varying vec3 vColor;void main(){vec3 source=uSources[0];if(aP.x>.5)source=uSources[1];if(aP.x>1.5)source=uSources[2];float f=fract(aP.y+uClock*(.16+uThreat*.11));float swirl=uClock*(1.7+aP.z)+aP.w*6.283;vec3 vortex=vec3(cos(swirl),sin(swirl),sin(swirl*.7))*(.4+aP.z*1.0)*(1.-f);vec3 p=mix(source,vec3(0.,.5,-.2),f)+vortex;p.y+=sin(f*3.14159265)*(1.+aP.z*2.);p.x+=sin(f*15.+aP.w*6.)*.3;p.z+=cos(f*12.+aP.w*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((1.+aP.z*2.)*uRatio*28./max(1.,-mv.z),1.,5.);vA=uThreat*(1.-uCleanse)*sin(f*3.14159265);vColor=aP.x<.5?vec3(.9,.18,2.):aP.x<1.5?vec3(2.,.08,.22):vec3(.12,.6,2.1);}`,
+    vertexShader:`attribute vec4 aP;uniform float uThreat,uClock,uCleanse,uRatio;uniform vec3 uSources[3];varying float vA;varying vec3 vColor;void main(){vec3 source=uSources[0];if(aP.x>.5)source=uSources[1];if(aP.x>1.5)source=uSources[2];float f=fract(aP.y+uClock*(.16+uThreat*.11));float swirl=uClock*(1.7+aP.z)+aP.w*6.283;vec3 vortex=vec3(cos(swirl),sin(swirl),sin(swirl*.7))*(.4+aP.z*1.0)*(1.-f);vec3 p=mix(source,vec3(0.,.5,-.2),f)+vortex;p.y+=sin(f*3.14159265)*(1.+aP.z*2.);p.x+=sin(f*15.+aP.w*6.)*.3;p.z+=cos(f*12.+aP.w*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;float burst=pow(max(0.,sin(uClock*2.1-aP.x*.8)),6.);gl_PointSize=clamp((1.+aP.z*2.+burst*2.)*uRatio*32./max(1.,-mv.z),1.,7.);vA=uThreat*(1.-uCleanse)*sin(f*3.14159265)*(.7+burst*1.3);vColor=aP.x<.5?vec3(.9,.18,2.):aP.x<1.5?vec3(2.,.08,.22):vec3(.12,.6,2.1);}`,
     fragmentShader:`varying float vA;varying vec3 vColor;void main(){float r=length(gl_PointCoord-.5)*2.;if(r>1.)discard;gl_FragColor=vec4(vColor,exp(-r*r*5.)*vA*.85);}`}));menace.frustumCulled=false;scene.add(menace);
   return {
     darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,centreManifest,floorManifest,
@@ -100,7 +110,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
       // Keep landmarks within the portrait field without changing their real 3D interaction space.
       const spread=cosmicSpread(camera.aspect);
       ancients.update(siegeElapsed,elapsed,mask,reduced,spread);
-      watchers.forEach((w,i)=>w.orb.getWorldPosition(u.sources.value[i]));
+      watchers.forEach((w,i)=>{if(i===2)w.head.localToWorld(u.sources.value[i].set(0,-.1,1.3));else w.orb.getWorldPosition(u.sources.value[i]);});
       const palaceSpread=spread*(camera.aspect<.8?.67:.88),palaceScale=camera.aspect<.8?.68:1;
       palaces.forEach(p=>{const reveal=materializationState(elapsed,p.index,mask);
         p.root.position.set(p.x*palaceSpread,p.y,p.root.position.z);p.root.scale.setScalar(p.scale*palaceScale);p.root.rotation.set(0,0,0);

@@ -18,6 +18,15 @@ export function frameDelta(milliseconds){return clamp(Number.isFinite(millisecon
 export function dawnAmount(energy,mask){return mask===7?clamp((energy-.6)/.4,0,1):0;}
 export const REBIRTH_DURATION=12;
 const easeWindow=(value,start,end)=>{const t=clamp((value-start)/(end-start),0,1);return t*t*(3-2*t);};
+// Both ruined steps and restored paving take the same route around the creative beacon.
+export function processionalStep(i){const z=5.2-i*.47,detour=Math.exp(-(((z-3.8)/1.05)**4));return {x:Math.sin(i*.24)*.45-.3-detour*1.45,z};}
+export function awakeningCameraKeys(position,target,phone=false){return [
+  {at:0,position:[...position],target:[...target]},
+  {at:1.15,position:phone?[0,4.8,19]:[.35,3.25,11.8],target:[0,2.8,-2.4]},
+  {at:3.1,position:phone?[0,5.2,19.6]:[.2,3.65,12.6],target:[0,2.65,-2.4]},
+  {at:7.4,position:phone?[0,13.2,22]:[.65,12,19],target:[0,1.25,-2]},
+  {at:12,position:phone?[0,30,20]:[1.2,29,16],target:[0,1.5,-6]},
+];}
 export const SIEGE_DURATION=32;
 export function advanceSiege(elapsed,dt,active,complete){return complete||!active?elapsed:clamp(elapsed+frameDelta(dt*1000),0,SIEGE_DURATION);}
 export function siegeState(elapsed){const t=clamp(Number.isFinite(elapsed)?elapsed:0,0,SIEGE_DURATION);return {progress:t/SIEGE_DURATION,approach:easeWindow(t,2,SIEGE_DURATION),urgency:easeWindow(t,18,SIEGE_DURATION),imminent:t>=SIEGE_DURATION};}
@@ -27,11 +36,11 @@ export function resolveSiege(journey,elapsed){
 }
 const ENEMY_ROUTES=Object.freeze([
   {start:[-11,1.5,-13],end:[-7.2,.9,-2.7],yaw:[.24,1.12],phase:0,scale:1.4},
-  {start:[-3,5,-29],end:[1,1.0,-10.7],yaw:[0,-.2],phase:2,scale:1.2},
-  {start:[12.5,1.2,-15.8],end:[7.2,1.0,-3.2],yaw:[-.3,-1.08],phase:4,scale:1.35},
+  {start:[-9,5,-29],end:[-6,1.0,-10.7],yaw:[.15,.45],phase:2,scale:1.2},
+  {start:[12.5,1.2,-15.8],end:[7.9,1.3,-3.4],yaw:[-.3,-1.08],phase:4,scale:1.35},
 ]);
 export function enemyPose(index,elapsed,rebirthElapsed,mask,reduced=false){
-  const def=ENEMY_ROUTES[index],threat=siegeState(elapsed),a=reduced?0:threat.approach,t=reduced?0:elapsed;
+  const def=ENEMY_ROUTES[index],threat=siegeState(elapsed),a=reduced?0:index===2?easeWindow(elapsed,0,26):threat.approach,t=reduced?0:elapsed;
   const recoil=mask===7?easeWindow(rebirthElapsed,0,.65):0;
   const position=def.start.map((v,i)=>v+(def.end[i]-v)*a);
   if(index===1)position[1]-=Math.sin(a*Math.PI)*1.2;

@@ -1,4 +1,4 @@
-import {enemyPose,siegeState} from './world-model.mjs?v=creature-reveal-20261110';
+import {enemyPose,siegeState} from './world-model.mjs?v=holy-ascent-20261110';
 
 // Swept anatomy, sculpted skulls and curved wing webs, with articulated joints.
 // Skin is opaque and depth-writing; a holy dissolve uses discard rather than see-through bodies.
@@ -76,6 +76,10 @@ export function createAncients(THREE,parent,camera){
     const group=new THREE.Group();group.name=['Abyssal elder','Crowned archdemon','Ancient void dragon'][index];parent.add(group);torso(group,index,index===2);
     const face=skull(group,index,index===2);face.head.position.set(0,index===0?2.25:2.05,index===2?.65:.05);
     const arms=[hand(group,skin[index],[-.85,1.2,index===2?.4:0],-1),hand(group,skin[index],[.85,1.2,index===2?.4:0],1)];
+    // Layered ceremonial armour follows the anatomy; swept crests keep a sculpted silhouette.
+    for(const side of [-1,1]){form(group,armor,[side*.72,1.17,.02],[.58,.34,.63]);for(let k=0;k<3;k++)sweep(group,[[side*(.65+k*.16),1.38,-.13],[side*(.86+k*.24),1.8+k*.12,-.26],[side*(1.2+k*.22),1.96+k*.14,-.48]],[.13,.08,.001],bone,20,8);
+      for(let k=0;k<3;k++)sweep(group,[[side*.08,.95-k*.27,.55],[side*.42,1.03-k*.27,.66],[side*.72,.82-k*.27,.45]],[.035,.045,.005],eyes[index],18,7);}
+    form(group,armor,[0,-.75,.12],[.61,.36,.48]);form(group,eyes[index],[0,.68,.62],[.11,.2,.045]);
     const wings=index===0?[]:[wing(group,-1,index),wing(group,1,index)];
     const tentacles=[];
     if(index===0){
@@ -88,7 +92,9 @@ export function createAncients(THREE,parent,camera){
     const orb=joint(arms[1],[.4,-1.4,.85]),orbColor=new THREE.Color([0x9c35ff,0xff184a,0x447dff][index]);
     const orbMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uClock:u.clock,uCleanse:u.cleanse,uColor:{value:orbColor}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec2 vUv;uniform float uClock,uCleanse;uniform vec3 uColor;void main(){float a=vUv.x*6.283+uClock*1.8;float vein=pow(max(0.,sin(a*5.+sin(vUv.y*24.-uClock)*2.)),8.);gl_FragColor=vec4(uColor*(1.+vein*2.),(.16+vein*.5)*(1.-uCleanse));}`});
     form(orb,orbMaterial,[0,0,0],[.43,.43,.43]);const rings=[];for(let j=0;j<2;j++){const ring=add(orb,new THREE.TorusGeometry(.5+j*.17,.01,6,70),eyes[index]);ring.rotation.x=j*.9;ring.userData.articulated=true;rings.push(ring);}
-    actors.push({group,head:face.head,jaw:face.jaw,arms,wings,tentacles,legs,tail,orb,rings,features:{eyes:index===0?6:2,claws:16,wingWebs:wings.length*4}});
+    const sigil=joint(group,[0,1.35,-1.0]);for(let k=0;k<2;k++)add(sigil,new THREE.TorusGeometry(2.15+k*.22,.012,6,112),eyes[index]);
+    for(let k=0;k<16;k++){const a=k*Math.PI/8;sweep(sigil,[[Math.cos(a)*2.24,Math.sin(a)*2.24,0],[Math.cos(a+.025)*2.42,Math.sin(a+.025)*2.42,0],[Math.cos(a+.04)*2.28,Math.sin(a+.04)*2.28,0]],[.012,.018,.001],eyes[index],8,5);}
+    actors.push({group,head:face.head,jaw:face.jaw,arms,wings,tentacles,legs,tail,orb,rings,sigil,features:{eyes:index===0?6:2,claws:16,wingWebs:wings.length*4}});
   }
   // Merge static sculpt details within each joint, preserving articulation with fewer draw calls.
   function merge(group){for(const child of [...group.children])if(child.isGroup)merge(child);
@@ -107,9 +113,11 @@ export function createAncients(THREE,parent,camera){
     a.wings.forEach((g,k)=>{const side=k?1:-1;sample(g,[side*3.8,.3,.25],.28);sample(g,[side*2.4,-1.1,.4],.28);});
   });return result;},update(siege,rebirth,mask,reduced,spread=1){const state=siegeState(siege);u.cleanse.value=mask===7?Math.min(1,rebirth/.65):0;u.clock.value=siege;
     actors.forEach((a,i)=>{const pose=enemyPose(i,siege,rebirth,mask,reduced),t=reduced?0:siege;
-      a.group.position.set(pose.position[0]*spread,pose.position[1],pose.position[2]);a.group.rotation.set(0,pose.yaw*.7,pose.roll);a.group.scale.setScalar(pose.scale*.86);a.head.rotation.y=-pose.yaw*.3;a.jaw.rotation.x=reduced?.15:.2+Math.max(0,Math.sin(t*1.3+i))*(.22+state.urgency*.3);
-      a.arms.forEach((g,k)=>{g.rotation.x=reduced?0:-state.urgency*.5+Math.sin(t*1.4+k*3)*.18;g.rotation.z=reduced?0:Math.sin(t*.8+k)*.07;});
-      a.wings.forEach((g,k)=>{g.rotation.y=reduced?0:Math.sin(t*(i===1?1.6:2.0))*.32*(k?1:-1);g.rotation.z=reduced?0:Math.cos(t*1.6)*.055*(k?1:-1);});
+      const strike=reduced?0:Math.pow(Math.max(0,Math.sin(t*2.1-i*.8)),6)*(.3+state.urgency*.7);
+      a.group.position.set(pose.position[0]*spread,pose.position[1],pose.position[2]);a.group.rotation.set(-strike*.13,pose.yaw*.7,pose.roll);a.group.scale.setScalar(pose.scale*.86);a.head.rotation.y=-pose.yaw*.3;a.jaw.rotation.x=reduced?.15:.2+Math.max(0,Math.sin(t*1.3+i))*(.22+state.urgency*.3)+strike*.23;
+      a.arms.forEach((g,k)=>{g.rotation.x=reduced?0:-state.urgency*.5+Math.sin(t*1.4+k*3)*.18-strike*(k?.7:.35);g.rotation.z=reduced?0:Math.sin(t*.8+k)*.07+(k?1:-1)*strike*.12;});
+      a.wings.forEach((g,k)=>{g.rotation.y=reduced?0:(Math.sin(t*(i===1?1.6:2.5))*.4+strike*.2)*(k?1:-1);g.rotation.z=reduced?0:Math.cos(t*1.6)*.075*(k?1:-1);});
+      a.orb.scale.setScalar(1+strike*.55);a.sigil.rotation.z=reduced?0:t*(i===1?-.12:.09);a.sigil.scale.setScalar(1+strike*.045);
       a.tentacles.forEach((g,k)=>{g.rotation.z=reduced?0:Math.sin(t*1.8+k*.7)*.21;g.rotation.x=reduced?0:Math.sin(t*1.1+k)*.13;});a.legs.forEach((g,k)=>g.rotation.x=reduced?0:Math.sin(t*1.7+k*Math.PI)*.24);if(a.tail)a.tail.rotation.y=reduced?0:Math.sin(t*1.2)*.3;a.rings.forEach((r,k)=>r.rotation.y=reduced?0:t*(.7+k*.3));
     });
   }};

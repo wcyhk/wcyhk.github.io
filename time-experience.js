@@ -1,4 +1,4 @@
-import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION} from './world-model.mjs?v=creature-reveal-20261110';
+import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION,awakeningCameraKeys} from './world-model.mjs?v=holy-ascent-20261110';
 
 const root=document.querySelector('.time-studio');
 if(root){
@@ -46,13 +46,13 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=creature-reveal-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=holy-ascent-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
       const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
       renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.setClearColor(0x080e1d);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const camera=new THREE.PerspectiveCamera(43,1,.15,160),controls=new OrbitControls(camera,canvas);
-      controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;controls.minDistance=10;controls.maxDistance=30;controls.minPolarAngle=.38;controls.maxPolarAngle=1.54;controls.rotateSpeed=.48;controls.zoomSpeed=.6;
+      controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;controls.minDistance=10;controls.maxDistance=40;controls.minPolarAngle=.38;controls.maxPolarAngle=1.54;controls.rotateSpeed=.48;controls.zoomSpeed=.6;
       controls.enabled=!mobile.matches;controls.enableZoom=!mobile.matches;canvas.style.touchAction=mobile.matches?'pan-y':'none';
       const hdrSupported=renderer.extensions.has('EXT_color_buffer_float');
       if(!hdrSupported){light=true;quality.disabled=true;quality.title='此裝置使用相容光影，所有探索功能仍可使用。';}
@@ -67,12 +67,7 @@ if(root){
       resetWorld=()=>{time=0;pulse=.8;energy=0;siegeElapsed=0;rebirthElapsed=0;for(const b of world.beacons)b.lit=0;resetView();};
       function setTouch(active){touchActive=active;controls.enabled=active||!mobile.matches;controls.enableZoom=controls.enabled;canvas.style.touchAction=mobile.matches&&!active?'pan-y':'none';touch.textContent=active?'完成探索 · 繼續閱讀 ↓':'開始 3D 探索 ↗';touch.setAttribute('aria-pressed',String(active));if(active)canvas.focus({preventScroll:true});}
       listen(touch,'click',()=>setTouch(!touchActive));
-      listen(root,'world-beacon',e=>{pulse=e.detail.newLight?1:.35;if(e.detail.complete&&e.detail.newLight&&!motion.matches){drainDamping();const phone=mobile.matches;tween={elapsed:0,keys:[
-        {at:0,position:camera.position.clone(),target:controls.target.clone()},
-        {at:1.1,position:new THREE.Vector3(phone?0:1.7,phone?7.8:7.2,phone?27:21.4),target:new THREE.Vector3(0,1.5,-2.3)},
-        {at:7.8,position:new THREE.Vector3(phone?0:-1.1,phone?7.2:6.1,phone?26:20),target:new THREE.Vector3(0,1.3,-3)},
-        {at:12,position:new THREE.Vector3(phone?0:.7,phone?7:5.7,phone?25:19),target:new THREE.Vector3(0,1.5,-2.4)},
-      ]};}wake();});
+      listen(root,'world-beacon',e=>{pulse=e.detail.newLight?1:.35;if(e.detail.complete&&e.detail.newLight&&!motion.matches){drainDamping();tween={elapsed:0,keys:awakeningCameraKeys(camera.position.toArray(),controls.target.toArray(),mobile.matches).map(k=>({...k,position:new THREE.Vector3(...k.position),target:new THREE.Vector3(...k.target)}))};}wake();});
       controls.addEventListener('start',()=>{dragging=true;tween=null;wake();});controls.addEventListener('end',()=>{dragging=false;wake();});controls.addEventListener('change',()=>wake());
       listen(canvas,'pointerdown',e=>{if(!controls.enabled)return;down={x:e.clientX,y:e.clientY};tween=null;wake();});
       listen(canvas,'pointerup',e=>{if(!controls.enabled)return;if(isTap(down,{x:e.clientX,y:e.clientY})){const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(world.pickTargets,false)[0];if(hit)select(hit.object.userData.beaconId);else{pulse=.35;wake();}}down=null;});
@@ -83,7 +78,7 @@ if(root){
         if(e.key===' '){flowChange(speed?0:lastSpeed);return;}if(e.key.toLowerCase()==='r'){resetView();return;}if(e.key==='Escape'){setTouch(false);canvas.blur();return;}
         tween=null;const spherical=new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
         if(e.key==='ArrowLeft')spherical.theta-=.12;if(e.key==='ArrowRight')spherical.theta+=.12;if(e.key==='ArrowUp')spherical.phi-=.09;if(e.key==='ArrowDown')spherical.phi+=.09;
-        if(e.key==='+'||e.key==='=')spherical.radius*=.92;if(e.key==='-')spherical.radius*=1.08;spherical.radius=clamp(spherical.radius,10,30);spherical.phi=clamp(spherical.phi,.38,1.54);
+        if(e.key==='+'||e.key==='=')spherical.radius*=.92;if(e.key==='-')spherical.radius*=1.08;spherical.radius=clamp(spherical.radius,10,40);spherical.phi=clamp(spherical.phi,.38,1.54);
         camera.position.setFromSpherical(spherical).add(controls.target);controls.update();wake();
       });
       function resize(){
