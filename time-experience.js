@@ -1,4 +1,4 @@
-import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors} from './world-model.mjs';
+import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors} from './world-model.mjs?v=worlds-end-polish-20261110';
 
 const root=document.querySelector('.time-studio');
 if(root){
@@ -37,17 +37,18 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs'),import('./world-post.mjs'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=worlds-end-polish-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
-      const renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:false,powerPreference:'high-performance'});
-      renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;renderer.setClearColor(0x080e1d);
+      const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+      renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.98;renderer.setClearColor(0x080e1d);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       const camera=new THREE.PerspectiveCamera(43,1,.15,160),controls=new OrbitControls(camera,canvas);
       controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=false;controls.minDistance=10;controls.maxDistance=30;controls.minPolarAngle=.38;controls.maxPolarAngle=1.54;controls.rotateSpeed=.48;controls.zoomSpeed=.6;
       controls.enabled=!mobile.matches;controls.enableZoom=!mobile.matches;canvas.style.touchAction=mobile.matches?'pan-y':'none';
       const hdrSupported=renderer.extensions.has('EXT_color_buffer_float');
       if(!hdrSupported){light=true;quality.disabled=true;quality.title='此裝置使用相容光影，所有探索功能仍可使用。';}
       const world=createWorldScene(THREE,camera),post=hdrSupported?createWorldPost(THREE,renderer):null,raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+      world.environment(renderer);
       let last=performance.now(),pulse=0,energy=0,dragging=false,down=null,touchActive=false,tween=null,frames=0;
       const markerWorld=BEACONS.map(()=>new THREE.Vector3()),markerNdc=BEACONS.map(()=>new THREE.Vector3());
       const defaultView=()=>({position:new THREE.Vector3(mobile.matches?1.0:1.5,mobile.matches?7.4:6.9,mobile.matches?24.0:18.0),target:new THREE.Vector3(0,1.2,-1.8)});

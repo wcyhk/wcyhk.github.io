@@ -31,7 +31,7 @@ test('Screen markers keep usable hit positions when multiple world coordinates a
 test('The actual procedural scene has valid geometry and all three raycast targets',()=>{
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera());assert.equal(world.beacons.length,3);assert.deepEqual(world.pickTargets.map(m=>m.userData.beaconId),BEACONS.map(b=>b.id));
   for(const [time,mask] of [[-120,0],[0,1],[10000,7]]){world.update(time,mask===7?1:0,.4,.016,mask);world.scene.updateMatrixWorld();world.scene.traverse(o=>{
-    assert.ok(o.position.toArray().every(Number.isFinite));if(o.geometry){const p=o.geometry.getAttribute('position');assert.ok([...p.array].every(Number.isFinite));if(o.geometry.index)assert.ok([...o.geometry.index.array].every(i=>i<p.count));}
+    assert.ok(o.position.toArray().every(Number.isFinite));if(o.geometry){const p=o.geometry.getAttribute('position');assert.ok([...p.array].every(Number.isFinite));if(o.geometry.index)assert.ok([...o.geometry.index.array].every(i=>i<p.count));if(o.material?.normalMap){const uv=o.geometry.getAttribute('uv');assert.ok(uv,`${o.type} with a normal map needs UV coordinates`);assert.equal(uv.count,p.count);assert.ok([...uv.array].every(Number.isFinite));}}
   });}
   world.quality(true,1);world.dispose();
 });
