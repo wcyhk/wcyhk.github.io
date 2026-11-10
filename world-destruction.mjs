@@ -1,5 +1,5 @@
-import {seededRandom,sphereHitsIsland,materializationState} from './world-model.mjs?v=golden-realm-20261110';
-import {createManifestation} from './world-reveal.mjs?v=golden-realm-20261110';
+import {seededRandom,sphereHitsIsland,materializationState} from './world-model.mjs?v=cloud-islands-20261110';
+import {createManifestation} from './world-reveal.mjs?v=cloud-islands-20261110';
 
 export function createIslandDestruction(THREE,scene,islands,stone){
   const random=seededRandom(841),dummy=new THREE.Object3D(),fragmentGeometry=new THREE.IcosahedronGeometry(1,0),records=[];

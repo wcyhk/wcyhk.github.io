@@ -4,7 +4,28 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
+const {createPalaceIsland}=await import(new URL(`${base}world-islands.mjs`,import.meta.url));
 const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep,SHIELD,shieldIntersection,cannonPacket,advanceSpin,realmState}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+
+test('Floating palace cliffs are closed, outward facing and support the complete courtyard',()=>{
+  const island=createPalaceIsland(THREE,new THREE.Group(),{},0),g=island.cliff.geometry,p=g.attributes.position,n=g.attributes.normal;
+  assert.ok(n.getX(81)>.5,'The outer cliff face must face the viewer rather than disappear from outside.');
+  assert.ok(g.boundingBox.min.y < -3.9 && g.boundingBox.max.y >= -.206);
+  const top=[];for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i)+.205)<1e-5)top.push([p.getX(i),p.getZ(i)]);
+  for(const [x,z] of [[-4.8,-3.8],[4.8,4.3],[-4.8,4.3],[4.8,-3.8]]){
+    let inside=false;for(let i=0,j=79;i<80;j=i++){const a=top[i],b=top[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])inside=!inside;}assert.ok(inside,'Every courtyard corner has a continuous rock crown below it.');
+  }
+  assert.ok(Array.from(p.array).every(Number.isFinite));
+});
+
+test('Island mist follows the independent ambient clock, supports light mode and clears on replay',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,.48,.15,160));w.quality(true,1);
+  w.reborn.update(0,26,7,20,false,12);w.scene.updateMatrixWorld();
+  for(const p of w.reborn.palaces){const i=p.island;assert.equal(i.uniforms.uClock.value,12);assert.equal(i.uniforms.uOpacity.value,1);assert.equal(i.mist.geometry.drawRange.count,54);assert.equal(i.uniforms.uScale.value,p.root.scale.x);}
+  const before=w.reborn.palaces.map(p=>p.island.cliff.matrixWorld.toArray());w.reborn.update(0,26,7,20,false,14);w.scene.updateMatrixWorld();w.reborn.palaces.forEach((p,i)=>{assert.equal(p.island.uniforms.uClock.value,14);assert.deepEqual(p.island.cliff.matrixWorld.toArray(),before[i]);});
+  w.reborn.update(0,26,7,20,true,20);assert.ok(w.reborn.palaces.every(p=>p.island.uniforms.uClock.value===0));
+  w.reborn.update(0,0,0,0,false,25);assert.ok(w.reborn.palaces.every(p=>!p.island.mist.visible&&p.island.uniforms.uOpacity.value===0));w.dispose();
+});
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);

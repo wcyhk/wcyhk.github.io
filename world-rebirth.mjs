@@ -1,10 +1,12 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=golden-realm-20261110';
-import {createAncients} from './world-creatures.mjs?v=golden-realm-20261110';
-import {createManifestation} from './world-reveal.mjs?v=golden-realm-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=cloud-islands-20261110';
+import {createAncients} from './world-creatures.mjs?v=cloud-islands-20261110';
+import {createManifestation} from './world-reveal.mjs?v=cloud-islands-20261110';
 
-import {createDemonSwarm} from './world-swarm.mjs?v=golden-realm-20261110';
+import {createDemonSwarm} from './world-swarm.mjs?v=cloud-islands-20261110';
 
-import {createAscension} from './world-ascension.mjs?v=golden-realm-20261110';
+import {createPalaceIsland} from './world-islands.mjs?v=cloud-islands-20261110';
+
+import {createAscension} from './world-ascension.mjs?v=cloud-islands-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -49,17 +51,17 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
     for(let j=0;j<7;j++)b.add(box,marble,[0,.48-j*.065,2.05+j*.22],[3.,.13,.34]);
     for(const s of [-1,1])for(let j=0;j<8;j++){b.add(cylinder,marble,[s*(1.3+j*.2),.85,2.12],[.045,.5,.045]);}
     // A continuous load-bearing terrace now supports every tower and the whole courtyard.
-    b.add(cylinder,blue,[0,-.78,.25],[4.65,1.3,3.85]);b.add(box,marble,[0,-.08,.25],[9.6,.25,8.1]);b.add(box,gilt,[0,.065,.25],[9.64,.045,8.14]);b.add(box,marble,[0,.1,.25],[9.35,.04,7.9]);
+    b.add(box,marble,[0,-.08,.25],[9.6,.25,8.1]);b.add(box,gilt,[0,.065,.25],[9.64,.045,8.14]);b.add(box,marble,[0,.1,.25],[9.35,.04,7.9]);
     for(const side of [-1,1]){b.add(box,marble,[side*2.95,1.5,-.25],[1.22,2.15,3.9]);b.add(box,gilt,[side*2.95,2.62,-.25],[1.32,.12,4.0]);for(let j=0;j<4;j++){b.add(box,blue,[side*3.575,1.62,-1.65+j*.85],[.035,.88,.3]);b.add(box,gilt,[side*3.6,2.12,-1.65+j*.85],[.04,.07,.38]);}
       for(const z of [-2.75,3.35]){b.add(cylinder,marble,[side*3.85,1.22,z],[.48,2.2,.48]);b.add(cylinder,gilt,[side*3.85,2.37,z],[.55,.13,.55]);b.add(dome,marble,[side*3.85,2.44,z],[.5,.5,.5]);b.add(cone,gilt,[side*3.85,3.1,z],[.1,.48,.1]);}
       b.add(box,gilt,[side*4.5,.16,.25],[.045,.035,7.8]);for(let j=0;j<13;j++)b.add(cylinder,marble,[side*4.42,.5,-3.35+j*.6],[.055,.72,.055]);b.add(box,marble,[side*4.42,.9,.25],[.17,.12,7.75]);
       for(let j=0;j<6;j++){const x=side*(1.8+j*.49);b.add(cylinder,marble,[x,.48,4.12],[.055,.7,.055]);b.add(box,gilt,[x,.9,4.12],[.45,.07,.15]);}}
     b.add(box,marble,[0,1.55,-2.55],[7.75,2.8,.45]);b.add(box,gilt,[0,3,-2.55],[7.9,.13,.6]);for(let j=0;j<15;j++)b.add(box,marble,[-3.65+j*.52,3.28,-2.55],[.28,.45,.55]);
     for(const z of [-3.65,4.15])b.add(box,gilt,[0,.16,z],[9.1,.035,.045]);
-    b.finish();const halo=mesh(root,torus,lightMat,[0,2.2,-1.7],[3.75,3.75,3.75]);halo.position.z=-2.15;halo.rotation.x=.12;
+    b.finish();const island=createPalaceIsland(THREE,root,surfaces,index);const halo=mesh(root,torus,lightMat,[0,2.2,-1.7],[3.75,3.75,3.75]);halo.position.z=-2.15;halo.rotation.x=.12;
     const ringMaterial=new THREE.MeshBasicMaterial({color:new THREE.Color(2.3,1.6,.65),transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
     const constructionRing=mesh(root,new THREE.TorusGeometry(3.4,.018,6,120),ringMaterial,[0,.4,0],[1,1,1],[Math.PI/2,0,0]);
-    root.userData.completeCastle=true;return {root,x,y,scale:size,index,halo,layers,constructionRing,footprint:{halfWidth:4.8,front:4.3,back:-3.8}};
+    root.userData.completeCastle=true;return {root,x,y,scale:size,index,island,halo,layers,constructionRing,footprint:{halfWidth:4.8,front:4.3,back:-3.8}};
   }
   const palaces=[palace(-11,1.0,-13,1.35,0),palace(11.5,.7,-13.8,1.3,1),palace(-5.5,3,-29,1.28,2)];
   palaces.forEach(p=>{p.halo.userData.revealIgnore=true;p.constructionRing.userData.revealIgnore=true;p.manifest=createManifestation(THREE,p.root);});
@@ -69,7 +71,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   cloudGeo.setAttribute('position',new THREE.BufferAttribute(cloudPos,3));cloudGeo.setAttribute('aSeed',new THREE.BufferAttribute(cloudSeed,3));
   const cloudMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uTime:u.time,uOpacity:{value:0},uWarm:{value:0},uRatio:u.ratio},
     vertexShader:`attribute vec3 aSeed;uniform float uTime,uRatio;varying float vSeed;void main(){vec3 p=position;p.x+=sin(uTime*.018+aSeed.x*6.)*.35;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=min(240.,(100.+aSeed.y*160.)*uRatio*8./max(1.,-mv.z));vSeed=aSeed.z;}`,
-    fragmentShader:`uniform float uOpacity,uWarm;varying float vSeed;void main(){float r=length((gl_PointCoord-.5)*vec2(1.,1.35))*2.;float a=exp(-r*r*3.5)*(1.-smoothstep(.65,1.,r));vec3 cold=mix(vec3(.25,.4,.55),vec3(.93,.79,.59),vSeed),warm=mix(vec3(.65,.25,.055),vec3(1.55,1.04,.43),vSeed);gl_FragColor=vec4(mix(cold,warm,uWarm),a*.34*uOpacity);}`});
+    fragmentShader:`uniform float uOpacity,uWarm;varying float vSeed;void main(){float r=length((gl_PointCoord-.5)*vec2(1.,1.35))*2.;float a=exp(-r*r*3.5)*(1.-smoothstep(.65,1.,r));vec3 cold=mix(vec3(.25,.4,.55),vec3(.93,.79,.59),vSeed),warm=mix(vec3(.65,.25,.055),vec3(1.55,1.04,.43),vSeed);gl_FragColor=vec4(mix(cold,warm,uWarm),a*.14*uOpacity);}`});
   const cloudOriginal=cloudPos.slice(),clouds=new THREE.Points(cloudGeo,cloudMat);heavens.add(clouds);clouds.frustumCulled=false;
 
   // The ruined centre is restored with a complete marble dais, processional ring and pylons.
@@ -109,7 +111,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
     fragmentShader:`varying float vA;void main(){vec2 p=(gl_PointCoord-.5)*2.;float r=length(p);if(r>1.)discard;float star=exp(-abs(p.x)*18.)+exp(-abs(p.y)*18.);gl_FragColor=vec4(vec3(2.7,2.15,1.1),(exp(-r*r*6.)+star*.14)*vA);}`}));gather.frustumCulled=false;scene.add(gather);
   return {
     darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,swarm,ascension,centreManifest,floorManifest,dispose(){ancients.dispose();},
-    quality(light,ratio){ascension.quality(light,ratio);swarm.quality(light,ratio);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);u.ratio.value=ratio;},
+    quality(light,ratio){palaces.forEach(p=>p.island.quality(light,ratio));ascension.quality(light,ratio);swarm.quality(light,ratio);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);u.ratio.value=ratio;},
     update(time,elapsed,mask,siegeElapsed=0,reduced=false,ambient=time){const s=rebirthState(elapsed,mask),threat=siegeState(siegeElapsed);u.time.value=time;u.sun.value=s.sun;u.cleanse.value=s.cleanse;u.wave.value=s.wave;u.radius.value=holyRadius(elapsed,mask);u.threat.value=.2+threat.urgency*.8;u.enemyClock.value=reduced?0:siegeElapsed;
       darkness.visible=s.cleanse<1;heavens.visible=s.palaces>0;sanctum.visible=s.sanctum>0;rays.visible=s.sun>0;motes.visible=s.sun>0;waveShell.visible=s.wave>0&&s.wave<1;
       waveShell.scale.setScalar(Math.max(.001,u.radius.value));rays.quaternion.copy(camera.quaternion);
@@ -117,13 +119,13 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
       const spread=cosmicSpread(camera.aspect);
       ancients.update(siegeElapsed,elapsed,mask,reduced,spread);swarm.update(siegeElapsed,elapsed,mask,reduced);
       watchers.forEach((w,i)=>{if(i===2)w.head.localToWorld(u.sources.value[i].set(0,-.1,1.3));else w.orb.getWorldPosition(u.sources.value[i]);});
-      const palaceSpread=spread*(camera.aspect<.8?.5:.88),palaceScale=camera.aspect<.8?.5:1;
+      const palaceSpread=spread*(camera.aspect<.8?.53:.88),palaceScale=camera.aspect<.8?.5:1;
       palaces.forEach(p=>{const reveal=materializationState(elapsed,p.index,mask);
         p.root.position.set(p.x*palaceSpread,p.y,p.root.position.z);p.root.scale.setScalar(p.scale*palaceScale);p.root.rotation.set(0,0,0);
         p.layers.forEach(layer=>{layer.position.set(0,0,0);layer.rotation.set(0,0,0);layer.scale.setScalar(1);});
         const enemy=watchers[[0,2,1][p.index]],centre=enemy.group.position,clearAt=1.4+(Math.hypot(centre.x-HOLY_ORIGIN[0],centre.y+1-HOLY_ORIGIN[1],centre.z-HOLY_ORIGIN[2])+6.5)/5;
         reveal.opacity*=smootherStep((elapsed-clearAt)/1.5);
-        p.manifest.update(reveal.opacity,time);p.halo.visible=reveal.opacity>0;p.constructionRing.visible=false;
+        p.manifest.update(reveal.opacity,time);p.island.update(reveal.opacity,ambient,p.root.scale.x,reduced);p.halo.visible=reveal.opacity>0;p.constructionRing.visible=false;
         origins[p.index].copy(p.root.position);scales[p.index]=p.root.scale.x;opacity[p.index]=reveal.opacity;gatherLight[p.index]=reveal.particles;
       });
       for(let i=0;i<cloudCount;i++){const p=palaces[i%3];cloudPos[i*3]=p.x*palaceSpread+(cloudOriginal[i*3]-p.x)*palaceScale;}

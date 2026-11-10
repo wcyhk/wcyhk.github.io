@@ -1,5 +1,5 @@
-import {realmState,seededRandom,BEACONS} from './world-model.mjs?v=golden-realm-20261110';
-import {createManifestation} from './world-reveal.mjs?v=golden-realm-20261110';
+import {realmState,seededRandom,BEACONS} from './world-model.mjs?v=cloud-islands-20261110';
+import {createManifestation} from './world-reveal.mjs?v=cloud-islands-20261110';
 
 export function createAscension(THREE,scene,palaces,surfaces,marble,gilt){
   const root=new THREE.Group();root.name='Royal summoning sanctuary';scene.add(root);
