@@ -173,7 +173,7 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "Wild Doctor 野外植物探索｜全新手機拍照與相片預覽網頁，透過後端連接百度植物識別，不保存相片。辨識啟用仍待百度實名認證及可用額度。",
+    "description": "Wild Doctor 野外植物探索｜手機拍照與相片上傳辨識，透過後端連接百度植物識別，顯示候選植物及百科線索；相片在裝置內縮圖，本站不保存相片。",
     "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
