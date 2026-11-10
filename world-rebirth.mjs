@@ -1,12 +1,12 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=goddess-revival-20261110';
-import {createAncients} from './world-creatures.mjs?v=goddess-revival-20261110';
-import {createManifestation} from './world-reveal.mjs?v=goddess-revival-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=goddess-volume-20261110';
+import {createAncients} from './world-creatures.mjs?v=goddess-volume-20261110';
+import {createManifestation} from './world-reveal.mjs?v=goddess-volume-20261110';
 
-import {createDemonSwarm} from './world-swarm.mjs?v=goddess-revival-20261110';
+import {createDemonSwarm} from './world-swarm.mjs?v=goddess-volume-20261110';
 
-import {createPalaceIsland} from './world-islands.mjs?v=goddess-revival-20261110';
+import {createPalaceIsland} from './world-islands.mjs?v=goddess-volume-20261110';
 
-import {createAscension} from './world-ascension.mjs?v=goddess-revival-20261110';
+import {createAscension} from './world-ascension.mjs?v=goddess-volume-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 

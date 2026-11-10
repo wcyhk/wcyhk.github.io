@@ -1,6 +1,6 @@
-import {createGoddess} from './world-goddess.mjs?v=goddess-revival-20261110';
-import {realmState,seededRandom,BEACONS} from './world-model.mjs?v=goddess-revival-20261110';
-import {createManifestation} from './world-reveal.mjs?v=goddess-revival-20261110';
+import {createGoddess} from './world-goddess.mjs?v=goddess-volume-20261110';
+import {realmState,seededRandom,BEACONS} from './world-model.mjs?v=goddess-volume-20261110';
+import {createManifestation} from './world-reveal.mjs?v=goddess-volume-20261110';
 
 export function createAscension(THREE,scene,palaces,surfaces,marble,gilt,camera){
   const goddess=createGoddess(THREE,scene,camera);

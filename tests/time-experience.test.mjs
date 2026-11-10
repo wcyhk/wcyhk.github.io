@@ -35,16 +35,26 @@ test('Only three unique world markers can complete a journey; duplicates cannot 
   assert.equal(activateBeacon(state,'technology').count,3);assert.deepEqual(newJourney(),{mask:0,count:0,selected:null,complete:false});
 });
 
-test('The goddess requires all beacons and a loaded transparent portrait, then replays safely',()=>{
-  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;let ready=0;g.onReady=()=>ready++;
-  g.update(26,7,10,false);assert.equal(g.root.visible,false);const texture=new THREE.Texture();g.setPortrait(texture);assert.equal(ready,1);assert.equal(g.assetState,'ready');assert.equal(texture.colorSpace,THREE.SRGBColorSpace);
+async function loadTestAvatar(){
+  const {GLTFLoader}=await import(new URL(`${base}assets/vendor/GLTFLoader.js`,import.meta.url));const {VRMLoaderPlugin}=await import(new URL(`${base}assets/vendor/three-vrm.module.min.js`,import.meta.url));const loader=new GLTFLoader();loader.register(parser=>{parser.loadTexture=()=>Promise.resolve(new THREE.Texture());return {name:'headless-test-textures'};});loader.register(parser=>new VRMLoaderPlugin(parser));const bytes=readFileSync(new URL(`${base}assets/goddess-avatar.vrm`,import.meta.url));return await new Promise((resolve,reject)=>loader.parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'',resolve,reject));
+}
+
+test('The volumetric goddess requires all beacons and a loaded skinned model, then replays safely',async()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;let ready=0;g.onReady=()=>ready++;g.update(26,7,10,false);assert.equal(g.root.visible,false);g.setAvatar(await loadTestAvatar());assert.equal(ready,1);assert.equal(g.assetState,'ready');assert.ok(g.avatar.meshes.some(m=>m.isSkinnedMesh));
   for(let mask=0;mask<7;mask++){g.update(26,mask,10,false);assert.equal(g.strength,0);assert.equal(g.root.visible,false);}
-  g.update(4.5,7,10,false);assert.equal(g.root.visible,false);g.update(9,7,10,false);assert.equal(g.root.visible,true);assert.equal(g.strength,1);assert.ok(g.portrait.material.transparent&&!g.portrait.material.depthWrite&&g.portrait.material.depthTest);assert.equal(g.uniforms.uPortrait.value,texture);
+  g.update(4.5,7,10,false);assert.equal(g.root.visible,false);g.update(9,7,10,false);assert.equal(g.root.visible,true);assert.equal(g.strength,1);assert.ok(g.avatar.materials.every(x=>x.material.transparent&&!x.material.depthWrite&&x.material.depthTest));assert.equal(g.uniforms.uWind.value,1);
+  const size=new THREE.Box3().setFromObject(g.avatar.root).getSize(new THREE.Vector3());assert.ok(size.z>1.5,'The character has substantial true depth.');assert.ok(size.y>5);let planes=0;g.root.traverse(o=>{if(o.isMesh&&o.geometry.type==='PlaneGeometry')planes++;});assert.equal(planes,0,'No portrait billboard remains in the character.');
   g.update(0,0,12,false);assert.equal(g.root.visible,false);assert.equal(g.uniforms.uPower.value,0);w.dispose();
 });
 
-test('The goddess keeps its world position in reduced motion and caps mobile particles',()=>{
-  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;g.setPortrait(new THREE.Texture());g.quality(true,1);g.update(26,7,10,true);const position=g.root.position.toArray();g.update(26,7,20,true);assert.deepEqual(g.root.position.toArray(),position);assert.equal(g.uniforms.uClock.value,0);assert.equal(g.particles.geometry.drawRange.count,240);assert.equal(g.ribbons.rotation.y,0);w.dispose();
+test('The goddess stays in the world as the camera orbits, and all animated depth shells match',async()=>{
+  const camera=new THREE.PerspectiveCamera(),w=createWorldScene(THREE,camera),g=w.reborn.ascension.goddess;g.setAvatar(await loadTestAvatar());
+  for(const [x,z] of [[0,18],[18,0],[0,-18],[-18,0]]){camera.position.set(x,6,z);g.update(26,7,10,false);w.scene.updateMatrixWorld(true);assert.deepEqual(g.root.rotation.toArray().slice(0,3),[0,0,0]);g.avatar.meshes.forEach((m,i)=>{const p=g.avatar.passes[i];assert.deepEqual(m.matrixWorld.toArray(),p.matrixWorld.toArray());if(m.isSkinnedMesh){assert.equal(m.skeleton,p.skeleton);assert.deepEqual(m.bindMatrix.toArray(),p.bindMatrix.toArray());}});}
+  g.update(26,7,10.04,false);w.scene.updateMatrixWorld(true);g.avatar.meshes.forEach((m,i)=>assert.deepEqual(m.matrixWorld.toArray(),g.avatar.passes[i].matrixWorld.toArray()));w.dispose();
+});
+
+test('The skinned goddess freezes wind in reduced motion and caps mobile particles',async()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;g.setAvatar(await loadTestAvatar());g.quality(true,1);g.update(26,7,10,true);const position=g.root.position.toArray();g.update(26,7,20,true);assert.deepEqual(g.root.position.toArray(),position);assert.equal(g.uniforms.uClock.value,0);assert.equal(g.uniforms.uWind.value,0);assert.equal(g.particles.geometry.drawRange.count,240);assert.equal(g.ribbons.rotation.y,0);assert.ok(g.avatar.hairBones.length>10);w.dispose();
 });
 
 test('Reborn altar has no approach stepping stones while the original night stairway remains',()=>{

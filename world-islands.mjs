@@ -1,4 +1,4 @@
-import {seededRandom} from './world-model.mjs?v=goddess-revival-20261110';
+import {seededRandom} from './world-model.mjs?v=goddess-volume-20261110';
 
 // A continuous, load-bearing crown tapers into eroded hanging cliffs, not loose debris.
 export function createPalaceIsland(THREE,parent,surfaces,index){
