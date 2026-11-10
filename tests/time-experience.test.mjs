@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,palaceBuild,SIEGE_DURATION}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -43,18 +43,54 @@ test('Siege advances only while the scene is being viewed and automatically awak
   assert.equal(advanceSiege(0,.05,false,false),0);assert.equal(resolveSiege(newJourney(),0).automatic,false);
 });
 
-test('All three enemies advance towards the altar, recoil from light, and architecture assembles in layers',()=>{
+test('All three enemies advance towards the altar and recoil from light',()=>{
   for(let i=0;i<3;i++){
     const a=enemyPose(i,0,0,0),b=enemyPose(i,32,0,0),r=enemyPose(i,32,.6,7);
     assert.ok(Math.hypot(b.position[0],b.position[2])<Math.hypot(a.position[0],a.position[2]));assert.ok(Math.hypot(b.position[0],b.position[2])>6.8);
     assert.ok(Math.hypot(r.position[0],r.position[2])>Math.hypot(b.position[0],b.position[2]));assert.deepEqual(enemyPose(i,32,0,0,true).position,enemyPose(i,0,0,0,true).position);
-    const start=palaceBuild(0,i),mid=palaceBuild(4,i),end=palaceBuild(12,i);assert.deepEqual(start,{foundation:0,hall:0,crown:0,finish:0});assert.ok(mid.foundation>mid.hall&&mid.hall>=mid.crown);assert.deepEqual(end,{foundation:1,hall:1,crown:1,finish:1});
   }
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera());
   for(const [siege,rebirth,mask] of [[0,0,0],[16,0,1],[31.9,0,3],[32,.02,7],[32,.3,7],[32,.65,7],[32,4,7],[32,7,7],[32,12,7],[0,0,0]]){
     world.update(0,1,0,.016,mask,rebirth,siege);world.scene.updateMatrixWorld();world.scene.traverse(o=>{assert.ok([...o.matrixWorld.elements].every(Number.isFinite),o.name);});
   }
-  world.update(0,1,0,.016,7,12,32);for(const piece of world.reborn.repairPieces){assert.ok(Math.abs(piece.position.x)<1e-8);assert.equal(piece.position.y,-.1);assert.equal(piece.position.z,-.1);}world.dispose();
+  world.update(0,1,0,.016,7,12,32);for(const piece of world.reborn.repairPieces){assert.ok(Math.abs(piece.position.x)<1e-8);assert.equal(piece.position.y,-.4425);assert.equal(piece.position.z,-.1);}world.dispose();
+});
+
+test('Architecture manifests at fixed transforms with a depth prepass, then becomes solid',()=>{
+  for(const mask of [0,1,3,6])assert.equal(materializationState(12,0,mask).opacity,0);
+  const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,1.2,.15,160));
+  world.update(0,1,0,.05,7,2,20);world.scene.updateMatrixWorld();
+  const manifests=[...world.reborn.palaces.map(p=>p.manifest),world.reborn.centreManifest,world.reborn.floorManifest];
+  const snapshots=manifests.map(m=>m.meshes.map(o=>o.matrixWorld.toArray()));
+  for(const m of manifests){assert.ok(m.materials.every(x=>x.opacity>0&&x.opacity<1));assert.ok(m.passes.every(x=>x.visible&&x.material.colorWrite===false));assert.ok(m.materials.every(x=>x.depthFunc===THREE.EqualDepth));}
+  for(const elapsed of [4,6,9,12]){world.update(elapsed,1,0,.05,7,elapsed,20);world.scene.updateMatrixWorld();manifests.forEach((m,i)=>m.meshes.forEach((o,j)=>{assert.deepEqual(o.matrixWorld.toArray(),snapshots[i][j]);assert.deepEqual(m.passes[j].matrixWorld.toArray(),o.matrixWorld.toArray(),'The depth shell must exactly match every materialized mesh.');}));}
+  for(const m of manifests){assert.ok(m.passes.every(x=>!x.visible));assert.ok(m.materials.every(x=>x.opacity===1&&x.depthWrite));}
+  world.update(0,0,0,.05,0,0,0);assert.ok(world.reborn.palaces.every(p=>p.manifest.materials.every(m=>m.opacity===0)));world.dispose();
+});
+
+test('Actual articulated enemy contacts shatter islands once, across desktop and phone layouts, and replay restores them',()=>{
+  assert.equal(sphereHitsIsland([0,8,0],1,{x:0,y:0,z:0,radius:3,depth:2}),false);
+  assert.equal(sphereHitsIsland([3.2,.1,0],.3,{x:0,y:0,z:0,radius:3,depth:2}),true);
+  for(const aspect of [1.2,.48]){const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));world.update(0,0,0,.05,0,0,0);assert.equal(world.destruction.records.filter(r=>r.shattered).length,0);
+    let firstDefence=null;for(let i=1;i<=640;i++){world.update(i*.0325,0,0,.05,0,0,i*.05);if(world.destruction.altarThreat&&firstDefence===null)firstDefence=i*.05;}
+    const hits=world.destruction.records.filter(r=>r.shattered);assert.deepEqual([...new Set(hits.map(r=>r.hitBy))].sort(),[0,1,2]);assert.ok(firstDefence>15&&firstDefence<=32);for(const hit of hits){assert.equal(hit.group.visible,false);assert.equal(hit.fragments.visible,true);}
+    world.update(0,1,0,.05,7,12,32);for(const hit of hits){assert.equal(hit.group.visible,true);assert.equal(hit.fragments.visible,false);}
+    world.update(0,0,0,.05,0,0,0);assert.ok(world.destruction.records.every(r=>!r.shattered&&r.hitAt===null&&r.group.visible));world.dispose();
+  }
+});
+
+test('Sculpted enemies have separate facial features, claws, curved wing webs and opaque skin; the accretion disk clears the ground',()=>{
+  const world=createWorldScene(THREE,new THREE.PerspectiveCamera());world.update(0,0,0,.05,0,0,0);world.scene.updateMatrixWorld();
+  world.reborn.ancients.actors.forEach((a,i)=>{assert.ok(a.features.eyes>=2&&a.features.claws>=10);if(i>0)assert.ok(a.features.wingWebs>=8);a.group.traverse(o=>{if(o.material?.isMeshStandardMaterial){assert.equal(o.material.transparent,false);assert.equal(o.material.depthWrite,true);}});});
+  const disk=world.gate.children.find(m=>m.geometry?.parameters?.outerRadius===3.8);assert.ok(disk);assert.ok(new THREE.Box3().setFromObject(disk).min.y>.4);world.dispose();
+});
+
+test('All three sculpted face centres fit the initial desktop and portrait compositions',()=>{
+  for(const [aspect,fov,position] of [[980/812,43,[1.5,6.9,18]],[375/810,48,[0,7.4,26]]]){
+    const camera=new THREE.PerspectiveCamera(fov,aspect,.15,160);camera.position.set(...position);camera.lookAt(0,1.2,-1.8);camera.updateMatrixWorld();const world=createWorldScene(THREE,camera);world.update(0,0,0,.05,0,0,0);world.scene.updateMatrixWorld();
+    const blockers=[world.scene.children.find(o=>o.geometry?.parameters?.radius===5.7),world.gate.children.find(o=>o.geometry?.parameters?.radius===2.55)],ray=new THREE.Raycaster();
+    for(const actor of world.reborn.ancients.actors){const worldFace=actor.head.getWorldPosition(new THREE.Vector3()),face=worldFace.clone().project(camera);assert.ok(Math.abs(face.x)<.95&&Math.abs(face.y)<.95,`${actor.group.name}: ${face.toArray()}`);ray.setFromCamera(new THREE.Vector2(face.x,face.y),camera);const blocker=ray.intersectObjects(blockers,false)[0];assert.ok(!blocker||blocker.distance>camera.position.distanceTo(worldFace),`${actor.group.name} face must not be hidden by the moon or gate on arrival.`);}world.dispose();
+  }
 });
 
 test('Actual monsters, palaces and central restoration switch correctly, with finite instanced transforms',()=>{

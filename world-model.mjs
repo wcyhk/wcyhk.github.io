@@ -4,6 +4,7 @@ export const BEACONS = Object.freeze([
   Object.freeze({id:'creativity',name:'創作',english:'CREATIVITY',color:0xd9b2ff,position:[.5,.65,3.8],message:'創作｜讓腦海裏的世界，成為可以走進的作品。'}),
 ]);
 export const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+export const cosmicSpread=aspect=>Math.min(1,Math.max(.60,aspect));
 export function seededRandom(seed=2026){return()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 export function newJourney(){return {mask:0,count:0,selected:null,complete:false};}
 export function activateBeacon(state,id){
@@ -26,17 +27,19 @@ export function resolveSiege(journey,elapsed){
 }
 const ENEMY_ROUTES=Object.freeze([
   {start:[-11,1.5,-13],end:[-7.2,.9,-2.7],yaw:[.24,1.12],phase:0,scale:1.4},
-  {start:[1,3,-29],end:[1,2.5,-10.7],yaw:[0,-.2],phase:2,scale:1.2},
-  {start:[11.5,1.2,-13.8],end:[7.2,1.0,-3.2],yaw:[-.3,-1.08],phase:4,scale:1.35},
+  {start:[-3,5,-29],end:[1,1.0,-10.7],yaw:[0,-.2],phase:2,scale:1.2},
+  {start:[12.5,1.2,-15.8],end:[7.2,1.0,-3.2],yaw:[-.3,-1.08],phase:4,scale:1.35},
 ]);
 export function enemyPose(index,elapsed,rebirthElapsed,mask,reduced=false){
   const def=ENEMY_ROUTES[index],threat=siegeState(elapsed),a=reduced?0:threat.approach,t=reduced?0:elapsed;
   const recoil=mask===7?easeWindow(rebirthElapsed,0,.65):0;
   const position=def.start.map((v,i)=>v+(def.end[i]-v)*a);
+  if(index===1)position[1]-=Math.sin(a*Math.PI)*1.2;
   position[0]+=Math.sign(def.start[0])*recoil*3;position[1]+=Math.sin(t*1.1+def.phase)*.19+recoil*.7;position[2]-=recoil*4;
   return {position,yaw:def.yaw[0]+(def.yaw[1]-def.yaw[0])*a,roll:reduced?0:Math.sin(t*.7+def.phase)*(.035+threat.urgency*.035),scale:def.scale*(1-recoil*.22),urgency:threat.urgency,clock:t};
 }
-export function palaceBuild(elapsed,index){const delay=index*.28;return {foundation:easeWindow(elapsed,1.4+delay,3.5+delay),hall:easeWindow(elapsed,2.6+delay,6.1+delay),crown:easeWindow(elapsed,4.5+delay,8.5+delay),finish:easeWindow(elapsed,7+delay,10+delay)};}
+export function materializationState(elapsed,index,mask){const t=mask===7?elapsed:0,delay=index*.25;return {opacity:easeWindow(t,1.1+delay,7.2+delay),particles:easeWindow(t,.7+delay,1.5+delay)*(1-easeWindow(t,6+delay,9+delay))};}
+export function sphereHitsIsland(center,radius,island){const horizontal=Math.max(0,Math.hypot(center[0]-island.x,center[2]-island.z)-island.radius),vertical=Math.max(island.y-island.depth-center[1],center[1]-island.y-.2,0);return horizontal*horizontal+vertical*vertical<=radius*radius;}
 // Story time is independent of the reversible star-flow clock. Replaying always resets it.
 export function advanceRebirth(elapsed,dt,mask,reduced=false){return mask!==7?0:reduced?REBIRTH_DURATION:clamp(elapsed+clamp(dt,0,.05),0,REBIRTH_DURATION);}
 export function rebirthState(elapsed,mask){
