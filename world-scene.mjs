@@ -1,6 +1,6 @@
-import {BEACONS,islandHeight,seededRandom,dawnAmount} from './world-model.mjs?v=world-rebirth-20261110';
+import {BEACONS,islandHeight,seededRandom} from './world-model.mjs?v=altar-siege-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=world-rebirth-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=altar-siege-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -152,9 +152,9 @@ export function createWorldScene(THREE,camera){
     environment(renderer){scene.environment=surfaces.environment(renderer);},
     markerPositions(){return beacons.map(b=>b.group.localToWorld(labelPosition.set(0,1.6,0)).clone());},
     quality(light,ratio){reborn.quality(light,ratio);dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
-    update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0){
-      const story=reborn.update(time,rebirthElapsed,mask);
-      uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=Math.min(dawnAmount(energy,mask),story.sun);uniforms.dawn.value=dawn;
+    update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0,siegeElapsed=0,reduced=false){
+      const story=reborn.update(time,rebirthElapsed,mask,siegeElapsed,reduced);
+      uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=story.sun;uniforms.dawn.value=dawn;
       ruins.position.y=-story.sanctum*2.8;ruins.visible=story.sanctum<.98;
       topMaterial.color.setRGB(1+story.sanctum*.5,1+story.sanctum*.4,1+story.sanctum*.23);
       scene.fog.color.setRGB(.063+story.sun*.02,.094+story.sun*.026,.176+story.sun*.025);

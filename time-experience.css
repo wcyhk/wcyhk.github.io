@@ -47,6 +47,11 @@
 .time-poem{font-size:13px;line-height:2.05;letter-spacing:.18em;color:#cad1d5;margin:24px 0 0}
 .world-quest{position:absolute;right:6%;top:82px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;padding:0 0 0 24px;border-left:1px solid #bdc8cd30;pointer-events:none}
 .world-quest-kicker{font:8px/1.6 var(--sans);letter-spacing:2px;color:#b6c7d0}.world-quest strong{font:400 33px/1.8 'Cormorant Garamond',serif;color:#f2d7ab;letter-spacing:4px}.world-quest-caption{font-size:10px;letter-spacing:3px;color:#b7c6cf}
+.world-threat{display:block;width:100%;height:2px;background:#c7d8e123;margin-top:13px;overflow:hidden}.world-threat i{display:block;height:100%;background:#e292a4;box-shadow:0 0 9px #ea527a;transform:scaleX(var(--siege,0));transform-origin:left}
+.world-threat-label{font-size:8px;letter-spacing:1px;color:#d9a3b0;margin-top:7px}.time-studio[data-completed="true"] .world-threat-label{color:#f1d9ac}.time-studio[data-completed="true"] .world-threat i{background:#edd39a;transform:scaleX(1);box-shadow:0 0 9px #f9d387}
+/* The single holy flare remains inside the scene, below the readable controls. */
+.time-studio .time-scene:after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;opacity:var(--holy-flash,0);background:radial-gradient(ellipse at 50% 45%,#fff4ce,transparent 70%)}
+@media(max-width:720px){.world-threat{margin-top:7px}.world-threat-label{font-size:6px;letter-spacing:.2px;margin-top:5px}}
 .world-chapter{position:absolute;left:50%;bottom:210px;transform:translateX(-50%);z-index:2;margin:0;width:min(650px,78%);text-align:center;color:#e8dfcd;font-size:13px;letter-spacing:.17em;line-height:1.9;pointer-events:none;text-shadow:0 2px 15px #000;transition:color 1s}
 .time-studio[data-completed="true"] .world-chapter{color:#ffdfaa;font-family:var(--serif);font-size:clamp(16px,1.8vw,25px);letter-spacing:.2em}
 .time-coordinate{position:absolute;left:6%;bottom:24px;right:6%;z-index:2;font:7px/1.6 var(--sans);letter-spacing:2px;color:#748e9f;pointer-events:none;display:flex;justify-content:space-between}

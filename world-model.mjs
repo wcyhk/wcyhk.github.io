@@ -17,11 +17,31 @@ export function frameDelta(milliseconds){return clamp(Number.isFinite(millisecon
 export function dawnAmount(energy,mask){return mask===7?clamp((energy-.6)/.4,0,1):0;}
 export const REBIRTH_DURATION=12;
 const easeWindow=(value,start,end)=>{const t=clamp((value-start)/(end-start),0,1);return t*t*(3-2*t);};
+export const SIEGE_DURATION=32;
+export function advanceSiege(elapsed,dt,active,complete){return complete||!active?elapsed:clamp(elapsed+frameDelta(dt*1000),0,SIEGE_DURATION);}
+export function siegeState(elapsed){const t=clamp(Number.isFinite(elapsed)?elapsed:0,0,SIEGE_DURATION);return {progress:t/SIEGE_DURATION,approach:easeWindow(t,2,SIEGE_DURATION),urgency:easeWindow(t,18,SIEGE_DURATION),imminent:t>=SIEGE_DURATION};}
+export function resolveSiege(journey,elapsed){
+  if(journey.complete||!siegeState(elapsed).imminent)return {journey,automatic:false};
+  return {journey:BEACONS.reduce((s,b)=>activateBeacon(s,b.id),journey),automatic:true};
+}
+const ENEMY_ROUTES=Object.freeze([
+  {start:[-11,1.5,-13],end:[-7.2,.9,-2.7],yaw:[.24,1.12],phase:0,scale:1.4},
+  {start:[1,3,-29],end:[1,2.5,-10.7],yaw:[0,-.2],phase:2,scale:1.2},
+  {start:[11.5,1.2,-13.8],end:[7.2,1.0,-3.2],yaw:[-.3,-1.08],phase:4,scale:1.35},
+]);
+export function enemyPose(index,elapsed,rebirthElapsed,mask,reduced=false){
+  const def=ENEMY_ROUTES[index],threat=siegeState(elapsed),a=reduced?0:threat.approach,t=reduced?0:elapsed;
+  const recoil=mask===7?easeWindow(rebirthElapsed,0,.65):0;
+  const position=def.start.map((v,i)=>v+(def.end[i]-v)*a);
+  position[0]+=Math.sign(def.start[0])*recoil*3;position[1]+=Math.sin(t*1.1+def.phase)*.19+recoil*.7;position[2]-=recoil*4;
+  return {position,yaw:def.yaw[0]+(def.yaw[1]-def.yaw[0])*a,roll:reduced?0:Math.sin(t*.7+def.phase)*(.035+threat.urgency*.035),scale:def.scale*(1-recoil*.22),urgency:threat.urgency,clock:t};
+}
+export function palaceBuild(elapsed,index){const delay=index*.28;return {foundation:easeWindow(elapsed,1.4+delay,3.5+delay),hall:easeWindow(elapsed,2.6+delay,6.1+delay),crown:easeWindow(elapsed,4.5+delay,8.5+delay),finish:easeWindow(elapsed,7+delay,10+delay)};}
 // Story time is independent of the reversible star-flow clock. Replaying always resets it.
 export function advanceRebirth(elapsed,dt,mask,reduced=false){return mask!==7?0:reduced?REBIRTH_DURATION:clamp(elapsed+clamp(dt,0,.05),0,REBIRTH_DURATION);}
 export function rebirthState(elapsed,mask){
   const t=mask===7?clamp(Number.isFinite(elapsed)?elapsed:0,0,REBIRTH_DURATION):0;
-  return {sun:easeWindow(t,0,3.2),wave:easeWindow(t,1.4,7.2),cleanse:easeWindow(t,3,7.4),palaces:easeWindow(t,5,10.5),sanctum:easeWindow(t,4.5,12),title:t>=6,complete:t>=REBIRTH_DURATION};
+  return {sun:easeWindow(t,0,.45),wave:easeWindow(t,0,1.15),cleanse:easeWindow(t,0,.65),flare:easeWindow(t,0,.12)*(1-easeWindow(t,.16,1.4)),palaces:easeWindow(t,1.5,9.5),sanctum:easeWindow(t,1.1,10),title:t>=1.5,complete:t>=REBIRTH_DURATION};
 }
 export function isTap(start,end){return !!start&&Math.hypot(end.x-start.x,end.y-start.y)<7;}
 export function flowLabel(value){return Math.abs(value)<.025?'星流凝止':value<0?'星流逆行':'星流前行';}

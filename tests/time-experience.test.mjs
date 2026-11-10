@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,palaceBuild,SIEGE_DURATION}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -28,8 +28,33 @@ test('The restoration requires every beacon, follows a monotonic story clock and
   let elapsed=0,previous=rebirthState(0,7);
   for(let i=0;i<241;i++){elapsed=advanceRebirth(elapsed,.05,7);const next=rebirthState(elapsed,7);for(const k of ['sun','wave','cleanse','palaces','sanctum']){assert.ok(next[k]>=previous[k]&&next[k]<=1);assert.ok(Number.isFinite(next[k]));}previous=next;}
   assert.equal(elapsed,REBIRTH_DURATION);assert.equal(previous.complete,true);assert.equal(previous.palaces,1);assert.equal(previous.sanctum,1);
-  assert.equal(rebirthState(2,7).palaces,0);assert.equal(rebirthState(5,7).title,false);assert.equal(rebirthState(6,7).title,true);
+  assert.equal(rebirthState(.8,7).palaces,0);assert.equal(rebirthState(1,7).title,false);assert.equal(rebirthState(1.5,7).title,true);
+  assert.ok(rebirthState(.05,7).sun>0);assert.ok(rebirthState(.05,7).cleanse>0);assert.equal(rebirthState(.65,7).cleanse,1);assert.equal(rebirthState(1.15,7).wave,1);
   assert.equal(advanceRebirth(0,.016,7,true),12);assert.equal(rebirthState(advanceRebirth(12,.05,0),0).sun,0);
+});
+
+test('Siege advances only while the scene is being viewed and automatically awakens all missing beacons once',()=>{
+  assert.equal(advanceSiege(12,.05,false,false),12);assert.equal(advanceSiege(12,.05,true,true),12);assert.equal(advanceSiege(12,1000,true,false),12.05);
+  assert.equal(siegeState(SIEGE_DURATION-.001).imminent,false);assert.equal(siegeState(SIEGE_DURATION).imminent,true);
+  for(const original of [newJourney(),activateBeacon(newJourney(),'education'),activateBeacon(activateBeacon(newJourney(),'technology'),'creativity')]){
+    assert.equal(resolveSiege(original,31.99).journey,original);const resolved=resolveSiege(original,32);assert.equal(resolved.automatic,true);assert.equal(resolved.journey.mask,7);assert.equal(resolved.journey.count,3);assert.equal(resolveSiege(resolved.journey,32).automatic,false);assert.equal(original.complete,false);
+  }
+  let manual=newJourney();for(const b of BEACONS)manual=activateBeacon(manual,b.id);assert.equal(resolveSiege(manual,32).journey,manual);assert.equal(resolveSiege(manual,32).automatic,false);
+  assert.equal(advanceSiege(0,.05,false,false),0);assert.equal(resolveSiege(newJourney(),0).automatic,false);
+});
+
+test('All three enemies advance towards the altar, recoil from light, and architecture assembles in layers',()=>{
+  for(let i=0;i<3;i++){
+    const a=enemyPose(i,0,0,0),b=enemyPose(i,32,0,0),r=enemyPose(i,32,.6,7);
+    assert.ok(Math.hypot(b.position[0],b.position[2])<Math.hypot(a.position[0],a.position[2]));assert.ok(Math.hypot(b.position[0],b.position[2])>6.8);
+    assert.ok(Math.hypot(r.position[0],r.position[2])>Math.hypot(b.position[0],b.position[2]));assert.deepEqual(enemyPose(i,32,0,0,true).position,enemyPose(i,0,0,0,true).position);
+    const start=palaceBuild(0,i),mid=palaceBuild(4,i),end=palaceBuild(12,i);assert.deepEqual(start,{foundation:0,hall:0,crown:0,finish:0});assert.ok(mid.foundation>mid.hall&&mid.hall>=mid.crown);assert.deepEqual(end,{foundation:1,hall:1,crown:1,finish:1});
+  }
+  const world=createWorldScene(THREE,new THREE.PerspectiveCamera());
+  for(const [siege,rebirth,mask] of [[0,0,0],[16,0,1],[31.9,0,3],[32,.02,7],[32,.3,7],[32,.65,7],[32,4,7],[32,7,7],[32,12,7],[0,0,0]]){
+    world.update(0,1,0,.016,mask,rebirth,siege);world.scene.updateMatrixWorld();world.scene.traverse(o=>{assert.ok([...o.matrixWorld.elements].every(Number.isFinite),o.name);});
+  }
+  world.update(0,1,0,.016,7,12,32);for(const piece of world.reborn.repairPieces){assert.ok(Math.abs(piece.position.x)<1e-8);assert.equal(piece.position.y,-.1);assert.equal(piece.position.z,-.1);}world.dispose();
 });
 
 test('Actual monsters, palaces and central restoration switch correctly, with finite instanced transforms',()=>{
