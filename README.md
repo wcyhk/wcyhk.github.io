@@ -6,7 +6,7 @@ Static HTML, CSS and JavaScript; project metadata refreshes from the public wcyh
 
 The qingming-hand-treasure and neighbour directories preserve existing compatibility entry routes.
 
-## 世界的盡頭 / The End of the World
+## 世界的盡頭 → 世界的復甦 / The World Reborn
 
 The About section contains a local Three.js 3D world. Drag to orbit, use the wheel to zoom, and awaken the Education, Technology and Creativity beacons. The monumental black-hole gate remains dark through the first two lights; the third transforms its event horizon into a radiant sun and warms the surrounding world. Arrow keys and +/- also control the camera; Space pauses the star flow and R restores the view. On phones, enable exploration explicitly, then choose “完成探索” to return to page scrolling. “重新探索” resets all three beacons and restores the black hole.
 
@@ -17,5 +17,7 @@ The landscape uses procedural PBR stone and engraved inlays, environment reflect
 The last visible gallery row uses a translucent navy glass surface, light text and a gold primary action. CSS row selectors follow the three-column desktop grid and two-column grid below 951px, including search and category filtering. Card links and poster images retain their original destinations and artwork.
 
 Beacon beam fade clamps its UV-derived fractional-power base to [0,1]. Multisampled edge interpolation can otherwise feed a negative value into the power calculation; the resulting invalid alpha is amplified by HDR bloom into black tiles at high camera angles. Keep this clamp when changing the beam shader.
+
+`world-rebirth.mjs` adds three original ancient silhouettes (a veiled elder, winged demon and serpentine dragon), instanced ivory/gold cloud palaces, and the restored central sanctuary. After the third beacon, a separate 12-second story clock drives solar rays, an expanding holy wave, golden motes, eroding shadows, rising palaces and a rebuilt island. The title becomes 世界的復甦 during this sequence. The first two beacons never start it; replay restores every stage. Pausing or reversing star flow does not rewind restoration. Reduced motion goes directly to the final state without the camera move or expanding wave. Lightweight mode limits the new motes to 650 and cloud points to 90. The approved biography and gallery transitions are preserved.
 
 Run `node --test tests/*.test.mjs` for discovery, camera/raycast geometry, mapped-surface UVs, biography, and existing entry-route checks.

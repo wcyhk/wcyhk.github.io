@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -21,6 +21,28 @@ test('All discovery orders complete consistently and leave previous states immut
 test('The void cannot ignite before all three beacons, and replay immediately restores the black hole',()=>{
   for(const mask of [0,1,2,3,4,5,6])assert.equal(dawnAmount(1,mask),0);
   assert.equal(dawnAmount(.5,7),0);assert.ok(dawnAmount(.8,7)>0&&dawnAmount(.8,7)<1);assert.equal(dawnAmount(1,7),1);assert.equal(dawnAmount(2,7),1);assert.equal(dawnAmount(-1,7),0);assert.equal(dawnAmount(1,newJourney().mask),0);
+});
+
+test('The restoration requires every beacon, follows a monotonic story clock and resets on replay',()=>{
+  for(const mask of [0,1,2,3,4,5,6]){const s=rebirthState(12,mask);assert.equal(s.sun,0);assert.equal(s.palaces,0);assert.equal(s.sanctum,0);assert.equal(s.title,false);assert.equal(advanceRebirth(8,.05,mask),0);}
+  let elapsed=0,previous=rebirthState(0,7);
+  for(let i=0;i<241;i++){elapsed=advanceRebirth(elapsed,.05,7);const next=rebirthState(elapsed,7);for(const k of ['sun','wave','cleanse','palaces','sanctum']){assert.ok(next[k]>=previous[k]&&next[k]<=1);assert.ok(Number.isFinite(next[k]));}previous=next;}
+  assert.equal(elapsed,REBIRTH_DURATION);assert.equal(previous.complete,true);assert.equal(previous.palaces,1);assert.equal(previous.sanctum,1);
+  assert.equal(rebirthState(2,7).palaces,0);assert.equal(rebirthState(5,7).title,false);assert.equal(rebirthState(6,7).title,true);
+  assert.equal(advanceRebirth(0,.016,7,true),12);assert.equal(rebirthState(advanceRebirth(12,.05,0),0).sun,0);
+});
+
+test('Actual monsters, palaces and central restoration switch correctly, with finite instanced transforms',()=>{
+  const camera=new THREE.PerspectiveCamera(43,.48,.15,160),world=createWorldScene(THREE,camera),r=world.reborn;
+  assert.equal(r.watchers.length,3);assert.equal(r.palaces.length,3);
+  for(const [mask,elapsed] of [[0,12],[3,12],[7,0],[7,4],[7,7],[7,12],[0,0]]){
+    const s=world.update(0,1,0,.05,mask,elapsed);assert.equal(r.darkness.visible,s.cleanse<1);assert.equal(r.heavens.visible,s.palaces>0);assert.equal(r.sanctum.visible,s.sanctum>0);
+    world.scene.traverse(o=>{if(o.isInstancedMesh)assert.ok([...o.instanceMatrix.array].every(Number.isFinite));});
+    for(const p of r.palaces)assert.ok(p.root.scale.x>0);
+  }
+  assert.equal(r.darkness.visible,true);assert.equal(r.heavens.visible,false);assert.equal(r.sanctum.visible,false);
+  const geometries=new Set(),materials=new Set();world.scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});
+  let disposed=0;geometries.forEach(g=>g.addEventListener('dispose',()=>disposed++));world.dispose();assert.equal(disposed,geometries.size);
 });
 test('Hidden-tab gaps and clock anomalies cannot cause an animation jump',()=>{assert.equal(frameDelta(10000),.05);assert.equal(frameDelta(-30),0);assert.equal(frameDelta(NaN),0);assert.equal(frameDelta(16),.016);assert.equal(flowLabel(0),'星流凝止');assert.equal(flowLabel(-.5),'星流逆行');});
 test('Framebuffer resolution is capped for high DPI and very large viewports',()=>{for(const [w,h,dpr] of [[390,810,3],[1440,900,2],[3840,2160,3]]){const scale=renderScale(w,h,dpr);assert.ok(w*h*scale*scale<=1900001);assert.ok(scale<=1.45);}assert.equal(renderScale(390,810,3,true),1);});

@@ -41,6 +41,9 @@
 .time-kicker>span{width:5px;height:5px;border-radius:50%;background:#f5d6a4;box-shadow:0 0 20px #f7bd64}
 .time-title{font:500 clamp(47px,5.6vw,88px)/1.35 var(--serif);letter-spacing:.12em;margin:0;color:#f5eee0;text-shadow:0 3px 50px #050915}
 .time-english{font:16px/1.5 'Cormorant Garamond',serif;letter-spacing:.46em;margin:9px 0 0;color:#d4bfa1}
+.time-title,.time-english,.time-poem{transition:color 2s,text-shadow 2s}
+.time-studio[data-story-title="true"] .time-title{color:#fff1ce;text-shadow:0 0 35px #f6d58a50,0 3px 45px #050915}
+.time-studio[data-story-title="true"] .time-english{color:#f6d99e}
 .time-poem{font-size:13px;line-height:2.05;letter-spacing:.18em;color:#cad1d5;margin:24px 0 0}
 .world-quest{position:absolute;right:6%;top:82px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;padding:0 0 0 24px;border-left:1px solid #bdc8cd30;pointer-events:none}
 .world-quest-kicker{font:8px/1.6 var(--sans);letter-spacing:2px;color:#b6c7d0}.world-quest strong{font:400 33px/1.8 'Cormorant Garamond',serif;color:#f2d7ab;letter-spacing:4px}.world-quest-caption{font-size:10px;letter-spacing:3px;color:#b7c6cf}

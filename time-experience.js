@@ -1,4 +1,4 @@
-import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors} from './world-model.mjs?v=worlds-end-polish-20261110';
+import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION} from './world-model.mjs?v=world-rebirth-20261110';
 
 const root=document.querySelector('.time-studio');
 if(root){
@@ -9,6 +9,14 @@ if(root){
   let journey=newJourney(),speed=motion.matches?0:.65,lastSpeed=.65,light=mobile.matches,initialized=false,visible=false,failed=false,raf=0,disposed=false;
   let wake=()=>{},resetView=()=>{},resetWorld=()=>{},setQuality=()=>{},time=0;
   const announce=message=>{status.textContent=message;};
+  function storyText(reborn=false){
+    if(root.dataset.storyTitle===String(reborn))return;root.dataset.storyTitle=String(reborn);
+    $('.time-title').textContent=reborn?'世界的復甦':'世界的盡頭';$('.time-english').textContent=reborn?'THE WORLD REBORN':'THE END OF THE WORLD';
+    $('.time-poem').innerHTML=reborn?'黑暗散去，<br>每一束光，都成為新的開始。':'在世界的邊界，<br>尋找下一個開始。';
+    $('.world-quest-kicker').textContent=reborn?'A WORLD REBORN':'THE LAST THREE LIGHTS';
+    $('.time-exhibit').setAttribute('aria-label',`${reborn?'世界的復甦':'世界的盡頭'}，3D 互動作品`);
+    canvas.setAttribute('aria-label',`${reborn?'世界的復甦':'世界的盡頭'} 3D 星海。拖曳旋轉，滾輪縮放，點選界標；方向鍵旋轉，加減鍵縮放，空白鍵暫停，R 鍵重設視角。`);
+  }
   function flowChange(value){speed=clamp(Number(value)||0,-1,1);if(Math.abs(speed)<.025)speed=0;if(speed)lastSpeed=speed;flow.value=speed;$('#time-flow-value').textContent=`${Math.abs(speed).toFixed(1)}×`;$('#time-flow-label').textContent=flowLabel(speed);pause.textContent=speed?'Ⅱ 暫停星流':'▷ 繼續星流';pause.setAttribute('aria-pressed',String(!speed));root.dataset.flow=String(speed);wake();}
   flowChange(speed);
   listen(flow,'input',()=>flowChange(flow.value));listen(pause,'click',()=>flowChange(speed?0:lastSpeed));
@@ -19,7 +27,8 @@ if(root){
   function updateJourney(){
     root.dataset.beacons=String(journey.count);root.dataset.completed=String(journey.complete);root.dataset.phase=journey.complete?'dawn':journey.count?'awakening':'void';
     $('#world-progress').textContent=`${String(journey.count).padStart(2,'0')} / 03`;
-    $('#world-chapter').textContent=journey.complete?'世界的盡頭，太陽再次升起。':journey.count?'界標已回應。黑洞正等待最後的光。':'喚醒三座界標，讓黑洞迎來曙光。';
+    if(!journey.complete)storyText(false);
+    $('#world-chapter').textContent=journey.complete?'太陽甦醒，聖光正在驅散黑暗。':journey.count?'界標已回應。黑洞正等待最後的光。':'喚醒三座界標，讓黑洞迎來曙光。';
     BEACONS.forEach((b,i)=>{const el=$(`[data-coordinate="${b.id}"]`),lit=!!(journey.mask&(1<<i));el.setAttribute('aria-pressed',String(lit));el.setAttribute('aria-label',`${lit?'已喚醒':'喚醒'}${b.name}界標`);el.querySelector('.node-orbit').textContent=lit?'✦':String(i+1).padStart(2,'0');});
     root.querySelectorAll('[data-bio]').forEach(el=>el.classList.toggle('coordinate-highlight',!!journey.selected&&el.dataset.bio.split(' ').includes(journey.selected)));
   }
@@ -37,7 +46,7 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=beam-edge-fix-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=world-rebirth-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
       const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -49,13 +58,13 @@ if(root){
       if(!hdrSupported){light=true;quality.disabled=true;quality.title='此裝置使用相容光影，所有探索功能仍可使用。';}
       const world=createWorldScene(THREE,camera),post=hdrSupported?createWorldPost(THREE,renderer):null,raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
       world.environment(renderer);
-      let last=performance.now(),pulse=0,energy=0,dragging=false,down=null,touchActive=false,tween=null,frames=0;
+      let last=performance.now(),pulse=0,energy=0,rebirthElapsed=0,dragging=false,down=null,touchActive=false,tween=null,frames=0;
       const markerWorld=BEACONS.map(()=>new THREE.Vector3()),markerNdc=BEACONS.map(()=>new THREE.Vector3());
       const defaultView=()=>({position:new THREE.Vector3(mobile.matches?1.0:1.5,mobile.matches?7.4:6.9,mobile.matches?24.0:18.0),target:new THREE.Vector3(0,1.2,-1.8)});
       const drainDamping=()=>{const damping=controls.enableDamping;controls.enableDamping=false;controls.update();controls.enableDamping=damping;};
       resetView=()=>{tween=null;drainDamping();const v=defaultView();camera.position.copy(v.position);controls.target.copy(v.target);controls.update();pulse=.2;wake();};
       resetView();
-      resetWorld=()=>{time=0;pulse=.8;energy=0;for(const b of world.beacons)b.lit=0;resetView();};
+      resetWorld=()=>{time=0;pulse=.8;energy=0;rebirthElapsed=0;for(const b of world.beacons)b.lit=0;resetView();};
       function setTouch(active){touchActive=active;controls.enabled=active||!mobile.matches;controls.enableZoom=controls.enabled;canvas.style.touchAction=mobile.matches&&!active?'pan-y':'none';touch.textContent=active?'完成探索 · 繼續閱讀 ↓':'開始 3D 探索 ↗';touch.setAttribute('aria-pressed',String(active));if(active)canvas.focus({preventScroll:true});}
       listen(touch,'click',()=>setTouch(!touchActive));
       listen(root,'world-beacon',e=>{pulse=e.detail.newLight?1:.35;if(e.detail.complete&&e.detail.newLight&&!motion.matches){drainDamping();tween={elapsed:0,from:camera.position.clone(),targetFrom:controls.target.clone(),to:new THREE.Vector3(mobile.matches?0:0.7,mobile.matches?6.6:5.4,mobile.matches?22.5:16.4),targetTo:new THREE.Vector3(0,1.7,-2.4)};}wake();});
@@ -81,14 +90,20 @@ if(root){
         raf=0;if(!visible||document.hidden||failed||disposed)return;
         const dt=frameDelta(now-last);last=now;time+=dt*speed;pulse=Math.max(0,pulse-dt*.62);energy+=(journey.count/3-energy)*(1-Math.exp(-dt*1.8));
         if(tween){tween.elapsed+=dt;const t=clamp(tween.elapsed/3,0,1),smooth=t*t*(3-2*t);camera.position.lerpVectors(tween.from,tween.to,smooth);controls.target.lerpVectors(tween.targetFrom,tween.targetTo,smooth);if(t>=1)tween=null;}
-        const moving=controls.update();world.update(time,energy,pulse,dt,journey.mask);world.scene.updateMatrixWorld();
+        rebirthElapsed=advanceRebirth(rebirthElapsed,dt,journey.mask,motion.matches);
+        const moving=controls.update(),story=world.update(time,energy,pulse,dt,journey.mask,rebirthElapsed);world.scene.updateMatrixWorld();
+        storyText(story.title);root.dataset.rebirth=rebirthElapsed.toFixed(2);
+        const storyPhase=story.complete?'reborn':journey.complete?'purifying':'dark';
+        if(storyPhase==='reborn'&&root.dataset.story!==storyPhase)announce('世界的復甦。黑暗身影已消散，雲上宮殿與中央聖域重新建立。');
+        root.dataset.story=storyPhase;
+        if(journey.complete){const chapter=story.complete?'世界的復甦。希望重回世界中心。':story.title?'雲上宮殿重現，聖域正在重建。':'太陽甦醒，聖光正在驅散黑暗。';if($('#world-chapter').textContent!==chapter)$('#world-chapter').textContent=chapter;}
         world.beacons.forEach((b,i)=>{b.group.getWorldPosition(markerWorld[i]);markerWorld[i].y+=1.65;markerNdc[i].copy(markerWorld[i]).project(camera);});
         const anchors=beaconAnchors(markerNdc,host.clientWidth,host.clientHeight);
         anchors.forEach((a,i)=>{const el=$(`[data-coordinate="${BEACONS[i].id}"]`);el.style.left=`${a.x}px`;el.style.top=`${a.y}px`;el.style.opacity=a.visible?'1':'0';el.style.pointerEvents=a.visible?'auto':'none';});
         if(light||!post){renderer.setRenderTarget(null);renderer.render(world.scene,camera);}else post.render(world.scene,camera,energy);
         if(frames===0)root.querySelectorAll('.time-node').forEach(el=>el.disabled=false);
-        frames++;root.dataset.frames=String(frames);root.dataset.camera=camera.position.toArray().map(n=>n.toFixed(2)).join(',');root.dataset.worldTime=time.toFixed(3);root.dataset.energy=energy.toFixed(3);
-        const settling=Math.abs(energy-journey.count/3)>.001||world.beacons.some((b,i)=>Math.abs(b.lit-Number(!!(journey.mask&(1<<i))))>.001);
+        frames++;root.dataset.frames=String(frames);root.dataset.camera=camera.position.toArray().map(n=>n.toFixed(2)).join(',');root.dataset.worldTime=time.toFixed(3);root.dataset.energy=energy.toFixed(3);root.dataset.drawCalls=String(renderer.info.render.calls);root.dataset.triangles=String(renderer.info.render.triangles);
+        const settling=(journey.complete&&rebirthElapsed<REBIRTH_DURATION)||Math.abs(energy-journey.count/3)>.001||world.beacons.some((b,i)=>Math.abs(b.lit-Number(!!(journey.mask&(1<<i))))>.001);
         if(!raf&&(speed||pulse>.001||dragging||moving||tween||settling))raf=requestAnimationFrame(frame);
       }
       wake=()=>{if(!raf&&visible&&!document.hidden&&!failed&&!disposed){last=performance.now();raf=requestAnimationFrame(frame);}};

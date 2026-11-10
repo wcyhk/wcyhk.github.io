@@ -15,6 +15,14 @@ export function activateBeacon(state,id){
 export function renderScale(w,h,dpr=1,light=false){return Math.min(Math.max(.5,dpr||1),light?1:1.45,Math.sqrt(1900000/Math.max(1,w*h)));}
 export function frameDelta(milliseconds){return clamp(Number.isFinite(milliseconds)?milliseconds/1000:0,0,.05);}
 export function dawnAmount(energy,mask){return mask===7?clamp((energy-.6)/.4,0,1):0;}
+export const REBIRTH_DURATION=12;
+const easeWindow=(value,start,end)=>{const t=clamp((value-start)/(end-start),0,1);return t*t*(3-2*t);};
+// Story time is independent of the reversible star-flow clock. Replaying always resets it.
+export function advanceRebirth(elapsed,dt,mask,reduced=false){return mask!==7?0:reduced?REBIRTH_DURATION:clamp(elapsed+clamp(dt,0,.05),0,REBIRTH_DURATION);}
+export function rebirthState(elapsed,mask){
+  const t=mask===7?clamp(Number.isFinite(elapsed)?elapsed:0,0,REBIRTH_DURATION):0;
+  return {sun:easeWindow(t,0,3.2),wave:easeWindow(t,1.4,7.2),cleanse:easeWindow(t,3,7.4),palaces:easeWindow(t,5,10.5),sanctum:easeWindow(t,4.5,12),title:t>=6,complete:t>=REBIRTH_DURATION};
+}
 export function isTap(start,end){return !!start&&Math.hypot(end.x-start.x,end.y-start.y)<7;}
 export function flowLabel(value){return Math.abs(value)<.025?'星流凝止':value<0?'星流逆行':'星流前行';}
 export function islandHeight(x,z){return .12*Math.sin(x*.8)*Math.cos(z*.72)+.06*Math.sin(z*1.8+x*.6);}

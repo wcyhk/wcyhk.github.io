@@ -1,5 +1,6 @@
-import {BEACONS,islandHeight,seededRandom,dawnAmount} from './world-model.mjs?v=worlds-end-polish-20261110';
+import {BEACONS,islandHeight,seededRandom,dawnAmount} from './world-model.mjs?v=world-rebirth-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=world-rebirth-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -144,14 +145,19 @@ export function createWorldScene(THREE,camera){
   const floats=new THREE.Group(),floatData=[];
   for(let i=0;i<30;i++){const a=rnd()*Math.PI*2,r=7+rnd()*12;const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(.05+rnd()*.14,0),i%5===0?gold:dark);mesh.position.set(Math.cos(a)*r,-1+rnd()*8,Math.min(1.5,Math.sin(a)*r-10));mesh.scale.y=1+rnd()*2;mesh.rotation.set(rnd()*3,rnd()*3,rnd()*3);floats.add(mesh);floatData.push({mesh,y:mesh.position.y,phase:rnd()*6});}scene.add(floats);
   scene.traverse(o=>{if(o.isMesh&&o.material?.isMeshStandardMaterial){o.castShadow=true;o.receiveShadow=true;}});
+  const reborn=createRebirthWorld(THREE,scene,camera,surfaces);
   const labelPosition=new THREE.Vector3();
   return {
-    scene,beacons,pickTargets,
+    scene,beacons,pickTargets,reborn,
     environment(renderer){scene.environment=surfaces.environment(renderer);},
     markerPositions(){return beacons.map(b=>b.group.localToWorld(labelPosition.set(0,1.6,0)).clone());},
-    quality(light,ratio){dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
-    update(time,energy,pulse,dt,mask){
-      uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=dawnAmount(energy,mask);uniforms.dawn.value=dawn;
+    quality(light,ratio){reborn.quality(light,ratio);dustGeo.setDrawRange(0,light?2200:count);dustMat.uniforms.uRatio.value=ratio;const size=light?1024:2048;if(key.shadow.mapSize.x!==size){key.shadow.map?.dispose();key.shadow.map=null;key.shadow.mapSize.set(size,size);}key.shadow.autoUpdate=!light;key.shadow.needsUpdate=true;},
+    update(time,energy,pulse,dt,mask,rebirthElapsed=mask===7?12:0){
+      const story=reborn.update(time,rebirthElapsed,mask);
+      uniforms.time.value=time;uniforms.energy.value=energy;uniforms.pulse.value=pulse;const dawn=Math.min(dawnAmount(energy,mask),story.sun);uniforms.dawn.value=dawn;
+      ruins.position.y=-story.sanctum*2.8;ruins.visible=story.sanctum<.98;
+      topMaterial.color.setRGB(1+story.sanctum*.5,1+story.sanctum*.4,1+story.sanctum*.23);
+      scene.fog.color.setRGB(.063+story.sun*.02,.094+story.sun*.026,.176+story.sun*.025);
       gate.rotation.z=Math.sin(time*.04)*.025;gateAura.material.opacity=.12+energy*.12+dawn*.3;disk.rotation.z=.1+time*.009;orbital.rotation.z=.28+time*.008;orbital2.rotation.y=.5-time*.005;coreLight.intensity=3+energy*10+dawn*65;key.intensity=2.5+dawn*3.3;key.color.set(dawn>.01?0xffd09a:0xc8d6e5);
       for(const p of prominences)p.loop.material.opacity=dawn*(.35+Math.sin(time*.17+p.phase)*.12);
       for(let i=0;i<gateParts.length;i++){const amount=Math.sin(time*.12+i)*.035+(1-energy)*.075;gateParts[i].position.x=Math.cos(i*Math.PI*2/9)*amount;gateParts[i].position.y=Math.sin(i*Math.PI*2/9)*amount;}
@@ -159,6 +165,7 @@ export function createWorldScene(THREE,camera){
       bridgeMat.opacity=energy*.38;
       for(const f of floatData){f.mesh.position.y=f.y+Math.sin(time*.14+f.phase)*.2;f.mesh.rotation.y=time*.035+f.phase;}
       for(const f of stairData)f.block.position.y=f.y+Math.sin(time*.2+f.phase)*.018*(1-energy);
+      return story;
     },
     dispose(){const geometries=new Set(),materials=new Set();scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])materials.add(m);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());radialTexture.dispose();surfaces.dispose();key.shadow.map?.dispose();},
   };
