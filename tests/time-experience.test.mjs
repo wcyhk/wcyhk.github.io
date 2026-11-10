@@ -34,6 +34,24 @@ test('Only three unique world markers can complete a journey; duplicates cannot 
   state=activateBeacon(state,'technology');assert.deepEqual(state,{mask:7,count:3,selected:'technology',complete:true});
   assert.equal(activateBeacon(state,'technology').count,3);assert.deepEqual(newJourney(),{mask:0,count:0,selected:null,complete:false});
 });
+
+test('The goddess requires all beacons and a loaded transparent portrait, then replays safely',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;let ready=0;g.onReady=()=>ready++;
+  g.update(26,7,10,false);assert.equal(g.root.visible,false);const texture=new THREE.Texture();g.setPortrait(texture);assert.equal(ready,1);assert.equal(g.assetState,'ready');assert.equal(texture.colorSpace,THREE.SRGBColorSpace);
+  for(let mask=0;mask<7;mask++){g.update(26,mask,10,false);assert.equal(g.strength,0);assert.equal(g.root.visible,false);}
+  g.update(4.5,7,10,false);assert.equal(g.root.visible,false);g.update(9,7,10,false);assert.equal(g.root.visible,true);assert.equal(g.strength,1);assert.ok(g.portrait.material.transparent&&!g.portrait.material.depthWrite&&g.portrait.material.depthTest);assert.equal(g.uniforms.uPortrait.value,texture);
+  g.update(0,0,12,false);assert.equal(g.root.visible,false);assert.equal(g.uniforms.uPower.value,0);w.dispose();
+});
+
+test('The goddess keeps its world position in reduced motion and caps mobile particles',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera()),g=w.reborn.ascension.goddess;g.setPortrait(new THREE.Texture());g.quality(true,1);g.update(26,7,10,true);const position=g.root.position.toArray();g.update(26,7,20,true);assert.deepEqual(g.root.position.toArray(),position);assert.equal(g.uniforms.uClock.value,0);assert.equal(g.particles.geometry.drawRange.count,240);assert.equal(g.ribbons.rotation.y,0);w.dispose();
+});
+
+test('Reborn altar has no approach stepping stones while the original night stairway remains',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());w.update(0,1,0,.05,7,26,20);const matrix=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();let steppingStones=0;
+  for(const mesh of w.reborn.centreManifest.meshes)if(mesh.isInstancedMesh)for(let i=0;i<mesh.count;i++){mesh.getMatrixAt(i,matrix);matrix.decompose(p,q,s);if(Math.abs(s.x-1.05)<1e-5&&Math.abs(s.y-.018)<1e-5&&Math.abs(s.z-.37)<1e-5)steppingStones++;}
+  assert.equal(steppingStones,0);assert.equal(w.stairs.visible,false);w.update(0,0,0,.05,0,0,0);assert.equal(w.stairs.visible,true);assert.equal(w.stairs.children.filter(o=>o.geometry===w.stairs.children[0].geometry).length,19);w.dispose();
+});
 test('All discovery orders complete consistently and leave previous states immutable',()=>{
   for(const order of [['education','technology','creativity'],['education','creativity','technology'],['technology','education','creativity'],['technology','creativity','education'],['creativity','education','technology'],['creativity','technology','education']]){
     const start=newJourney();let state=start;for(const id of order)state=activateBeacon(state,id);assert.equal(state.count,3);assert.equal(state.complete,true);assert.equal(start.mask,0);

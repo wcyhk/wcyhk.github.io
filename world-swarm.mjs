@@ -1,7 +1,7 @@
-import {swarmPose,holyRadius,holyContact,HOLY_ORIGIN,seededRandom,cannonPacket} from './world-model.mjs?v=cloud-islands-20261110';
-import {holySkin} from './world-spells.mjs?v=cloud-islands-20261110';
+import {swarmPose,holyRadius,holyContact,HOLY_ORIGIN,seededRandom,cannonPacket} from './world-model.mjs?v=goddess-revival-20261110';
+import {holySkin} from './world-spells.mjs?v=goddess-revival-20261110';
 
-import {createAltarShield} from './world-shield.mjs?v=cloud-islands-20261110';
+import {createAltarShield} from './world-shield.mjs?v=goddess-revival-20261110';
 
 export function createDemonSwarm(THREE,parent,scene=parent,camera=new THREE.PerspectiveCamera()){
   const field={radius:{value:0},active:{value:0},clock:{value:0}},root=new THREE.Group();root.name='Sculpted winged siege';parent.add(root);

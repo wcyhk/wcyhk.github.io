@@ -1,12 +1,12 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=cloud-islands-20261110';
-import {createAncients} from './world-creatures.mjs?v=cloud-islands-20261110';
-import {createManifestation} from './world-reveal.mjs?v=cloud-islands-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=goddess-revival-20261110';
+import {createAncients} from './world-creatures.mjs?v=goddess-revival-20261110';
+import {createManifestation} from './world-reveal.mjs?v=goddess-revival-20261110';
 
-import {createDemonSwarm} from './world-swarm.mjs?v=cloud-islands-20261110';
+import {createDemonSwarm} from './world-swarm.mjs?v=goddess-revival-20261110';
 
-import {createPalaceIsland} from './world-islands.mjs?v=cloud-islands-20261110';
+import {createPalaceIsland} from './world-islands.mjs?v=goddess-revival-20261110';
 
-import {createAscension} from './world-ascension.mjs?v=cloud-islands-20261110';
+import {createAscension} from './world-ascension.mjs?v=goddess-revival-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -84,12 +84,12 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=Math.cos(a)*5.5,z=Math.sin(a)*5.5-.1;if(z>2&&Math.abs(x)<2.5)continue;
     b.add(cylinder,marble,[x,.05,z],[.4,.25,.4]);b.add(cylinder,marble,[x,.85,z],[.17,1.4,.17]);b.add(cylinder,gilt,[x,1.6,z],[.32,.12,.32]);b.add(sphere,lightMat,[x,1.83,z],[.12,.12,.12]);}
   for(const s of [-1,1]){b.add(box,marble,[s*4.7,1.85,-2.6],[.72,4.2,.72]);for(const h of [.0,.18,3.7,3.95])b.add(box,gilt,[s*4.7,h,-2.6],[.98,.12,.98]);for(const side of [-1,1]){b.add(box,gilt,[s*4.7+side*.29,1.9,-2.22],[.035,3.25,.025]);}b.add(box,blue,[s*4.7,2,-2.22],[.29,2.6,.025]);b.add(cone,gilt,[s*4.7,4.5,-2.6],[.3,.9,.3]);}
-  for(let i=0;i<19;i++){const {x,z}=processionalStep(i);b.add(box,i%4===0?gilt:marble,[x,-.06,z],[1.05,.018,.37]);}
+  // The restored summoning circle stays clear; the night approach remains in world-scene.
   b.finish();
   const floorGroup=new THREE.Group();scene.add(floorGroup);const repairPieces=[],sectorGeometry=new THREE.CylinderGeometry(5.72,5.72,.065,8,1,false,0,Math.PI*2/12-.018);
   for(let i=0;i<12;i++){const tile=mesh(floorGroup,sectorGeometry,blue,[0,-.4425,-.1],[1,1,1],[0,i/12*Math.PI*2,0]);tile.name=`Sanctuary floor sector ${i+1}`;repairPieces.push(tile);}
   const crest=mesh(sanctum,new THREE.RingGeometry(1,1.025,96),lightMat,[0,-.39,-.1],[1,1,1],[Math.PI/2,0,0]);
-  const centreManifest=createManifestation(THREE,sanctum),floorManifest=createManifestation(THREE,floorGroup),ascension=createAscension(THREE,scene,palaces,surfaces,marble,gilt);
+  const centreManifest=createManifestation(THREE,sanctum),floorManifest=createManifestation(THREE,floorGroup),ascension=createAscension(THREE,scene,palaces,surfaces,marble,gilt,camera);
   const rays=new THREE.Mesh(new THREE.PlaneGeometry(62,62),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,
     uniforms:{uTime:u.time,uSun:u.sun},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
     fragmentShader:`varying vec2 vUv;uniform float uTime,uSun;void main(){vec2 p=(vUv-.5)*2.;float r=length(p),a=atan(p.y,p.x);float f=pow(max(0.,sin(a*27.+sin(a*11.)*.8+uTime*.012)),18.);float f2=pow(max(0.,sin(a*53.-uTime*.008)),26.);float mask=smoothstep(.084,.13,r)*(1.-smoothstep(.15,1.,r));float halo=exp(-r*7.);gl_FragColor=vec4(vec3(2.6,1.85,.83),mask*halo*(.19+f*.65+f2*.22)*uSun);}`}));
@@ -110,7 +110,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
     vertexShader:`attribute vec4 aP;uniform float uTime,uRatio;uniform vec3 uOrigins[4];uniform float uScales[4],uReveal[4],uGlow[4];varying float vA;void main(){int id=int(aP.x);float r=uReveal[id],g=uGlow[id];vec3 p=position*uScales[id]+uOrigins[id];p+=vec3(sin(uTime*.7+aP.y*12.)*(1.-r),(.5+aP.z*4.)*(1.-r),cos(uTime*.6+aP.w*9.)*(1.-r));vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((1.+aP.w*2.)*uRatio*28./max(1.,-mv.z),1.,5.);vA=g*(.45+.55*sin(aP.z*30.+uTime)*sin(aP.z*30.+uTime));}`,
     fragmentShader:`varying float vA;void main(){vec2 p=(gl_PointCoord-.5)*2.;float r=length(p);if(r>1.)discard;float star=exp(-abs(p.x)*18.)+exp(-abs(p.y)*18.);gl_FragColor=vec4(vec3(2.7,2.15,1.1),(exp(-r*r*6.)+star*.14)*vA);}`}));gather.frustumCulled=false;scene.add(gather);
   return {
-    darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,swarm,ascension,centreManifest,floorManifest,dispose(){ancients.dispose();},
+    darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,swarm,ascension,centreManifest,floorManifest,dispose(){ancients.dispose();ascension.goddess.dispose();},
     quality(light,ratio){palaces.forEach(p=>p.island.quality(light,ratio));ascension.quality(light,ratio);swarm.quality(light,ratio);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);u.ratio.value=ratio;},
     update(time,elapsed,mask,siegeElapsed=0,reduced=false,ambient=time){const s=rebirthState(elapsed,mask),threat=siegeState(siegeElapsed);u.time.value=time;u.sun.value=s.sun;u.cleanse.value=s.cleanse;u.wave.value=s.wave;u.radius.value=holyRadius(elapsed,mask);u.threat.value=.2+threat.urgency*.8;u.enemyClock.value=reduced?0:siegeElapsed;
       darkness.visible=s.cleanse<1;heavens.visible=s.palaces>0;sanctum.visible=s.sanctum>0;rays.visible=s.sun>0;motes.visible=s.sun>0;waveShell.visible=s.wave>0&&s.wave<1;

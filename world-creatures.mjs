@@ -1,6 +1,6 @@
-import {enemyPose,siegeState,holyRadius,holyContact} from './world-model.mjs?v=cloud-islands-20261110';
+import {enemyPose,siegeState,holyRadius,holyContact} from './world-model.mjs?v=goddess-revival-20261110';
 
-import {holySkin} from './world-spells.mjs?v=cloud-islands-20261110';
+import {holySkin} from './world-spells.mjs?v=goddess-revival-20261110';
 
 // Swept anatomy, sculpted skulls and curved wing webs, with articulated joints.
 // Skin is opaque and depth-writing; a holy dissolve uses discard rather than see-through bodies.

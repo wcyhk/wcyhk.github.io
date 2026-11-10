@@ -1,15 +1,15 @@
-import {seededRandom} from './world-model.mjs?v=cloud-islands-20261110';
+import {seededRandom} from './world-model.mjs?v=goddess-revival-20261110';
 
 // A continuous, load-bearing crown tapers into eroded hanging cliffs, not loose debris.
 export function createPalaceIsland(THREE,parent,surfaces,index){
   const random=seededRandom(810+index),root=new THREE.Group();root.name='Weathered floating palace island';parent.add(root);
-  const segments=80,levels=[[-.205,1],[-.42,1.025],[-.86,.98],[-1.45,.88],[-2.12,.72],[-2.85,.49],[-3.55,.25],[-4.03,.035]],positions=[],colors=[],indices=[];
+  const segments=80,levels=[[-.205,1],[-.43,1.02],[-.65,.97],[-.82,1.03],[-1.04,.91],[-1.28,.96],[-1.52,.82],[-1.78,.88],[-2.08,.71],[-2.4,.77],[-2.77,.57],[-3.18,.48],[-3.72,.27],[-4.35,.025]],positions=[],colors=[],indices=[];
   for(let j=0;j<levels.length;j++)for(let i=0;i<=segments;i++){
     const a=i/segments*Math.PI*2,c=Math.cos(a),s=Math.sin(a),[y,r]=levels[j];
-    const coast=1+(j===0?0:(Math.sin(a*7+index)*.028+Math.sin(a*13+1.2)*.018)),x=Math.sign(c)*Math.pow(Math.abs(c),.2)*5.2*r*coast,z=Math.sign(s)*Math.pow(Math.abs(s),.2)*4.5*r*coast;
-    const erosion=j===0?0:Math.sin(a*11+j*.9)*.10*Math.sin(j/7*Math.PI);
+    const coast=1+(j===0?0:Math.sin(a*3+index*1.7)*.075+Math.sin(a*7+j*.41+index)*.055+Math.sin(a*13+1.2)*.035),edge=j===0?r:Math.min(1.035,r*coast),x=Math.sign(c)*Math.pow(Math.abs(c),.2)*5.2*edge,z=Math.sign(s)*Math.pow(Math.abs(s),.2)*4.5*edge;
+    const erosion=j===0?0:(Math.sin(a*11+j*.9)*.19+Math.sin(a*5+index)*.13)*Math.sin(j/(levels.length-1)*Math.PI);
     positions.push(x+Math.sin(j*.7)*.18,y+erosion,z+.25+Math.sin(j*.5)*.16);
-    const vein=.5+.5*Math.sin(a*18+j*2.4),stratum=[.86,.94,.80,.90,.76,.84,.78,.82][j],grain=(random()-.5)*.07;
+    const vein=.5+.5*Math.sin(a*18+j*2.4),stratum=[.86,.95,.70,.91,.72,.88,.69,.87,.70,.86,.71,.82,.72,.80][j],grain=(random()-.5)*.09;
     const color=new THREE.Color().setRGB((stratum+grain)*(.86+vein*.08),(stratum+grain)*(.78+vein*.065),(stratum+grain)*(.66+vein*.055));colors.push(color.r,color.g,color.b);
     if(j<levels.length-1&&i<segments){const k=j*(segments+1)+i;indices.push(k,k+segments+1,k+1,k+1,k+segments+1,k+segments+2);}
   }
@@ -26,15 +26,15 @@ export function createPalaceIsland(THREE,parent,surfaces,index){
   // Planar UVs for the shared fine rock normal texture.
   const uv=new Float32Array(positions.length/3*2);for(let i=0;i<positions.length/3;i++){uv[i*2]=positions[i*3]*.25;uv[i*2+1]=(positions[i*3+1]+positions[i*3+2]*.15)*.25;}geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
   const cliff=new THREE.Mesh(geometry,material);cliff.name='Continuous stratified sandstone cliff';cliff.receiveShadow=true;root.add(cliff);
-  const boulders=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),material,56),dummy=new THREE.Object3D();
-  for(let i=0;i<56;i++){const a=i/56*Math.PI*2,t=.15+random()*.55,r=1-t*.48,c=Math.cos(a),s=Math.sin(a);dummy.position.set(Math.sign(c)*Math.pow(Math.abs(c),.2)*5.02*r,-.45-t*2.8,Math.sign(s)*Math.pow(Math.abs(s),.2)*4.34*r+.25);dummy.rotation.set(random()*.6,random()*Math.PI,random()*.4);dummy.scale.set(.25+random()*.38,.28+random()*.55,.22+random()*.28);dummy.updateMatrix();boulders.setMatrixAt(i,dummy.matrix);}boulders.name='Attached eroded rock outcrops';boulders.receiveShadow=true;root.add(boulders);
+  const boulders=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),material,80),dummy=new THREE.Object3D();
+  for(let i=0;i<80;i++){const a=i/80*Math.PI*2,t=.12+random()*.75,r=1-t*.47,c=Math.cos(a),s=Math.sin(a);dummy.position.set(Math.sign(c)*Math.pow(Math.abs(c),.2)*5.02*r,-.4-t*3.4,Math.sign(s)*Math.pow(Math.abs(s),.2)*4.34*r+.25);dummy.rotation.set(random()*1.2,random()*Math.PI,random()*.7);dummy.scale.set(.23+random()*.52,.3+random()*.8,.20+random()*.36);dummy.updateMatrix();boulders.setMatrixAt(i,dummy.matrix);}boulders.name='Attached eroded rock outcrops';boulders.receiveShadow=true;root.add(boulders);
   const count=108,p=new Float32Array(count*3),seeds=new Float32Array(count*3);
-  for(let i=0;i<count;i++){const a=i/count*Math.PI*2,band=i%3,r=.9+random()*.20;p.set([Math.cos(a)*5.4*r,-.55-band*.8-random()*.6,Math.sin(a)*4.65*r+.25],i*3);seeds.set([random(),random(),band],i*3);}
+  for(let i=0;i<count;i++){const a=i/count*Math.PI*2,band=i%3,r=.94+random()*.20;p.set([Math.cos(a)*5.4*r,-.9-band*.85-random()*.6,Math.sin(a)*4.65*r+.25],i*3);seeds.set([random(),random(),band],i*3);}
   const fogGeometry=new THREE.BufferGeometry();fogGeometry.setAttribute('position',new THREE.BufferAttribute(p,3));fogGeometry.setAttribute('aSeed',new THREE.BufferAttribute(seeds,3));
-  const uniforms={uClock:{value:0},uOpacity:{value:0},uRatio:{value:1},uScale:{value:1}};
+  const uniforms={uClock:{value:0},uOpacity:{value:0},uRatio:{value:1},uScale:{value:1},uCeiling:{value:0}};
   const fogMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,depthTest:true,toneMapped:false,uniforms,
-    vertexShader:`attribute vec3 aSeed;uniform float uClock,uRatio,uScale;varying vec3 vSeed;void main(){vec3 p=position;float a=uClock*.012*(.7+aSeed.x*.6),c=cos(a),s=sin(a);p.xz=mat2(c,-s,s,c)*p.xz;p.y+=sin(uClock*.18+aSeed.x*9.)*.17;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=min(230.*uRatio,(1.5+aSeed.y*1.8)*uScale*uRatio*650./max(1.,-mv.z));vSeed=aSeed;}`,
-    fragmentShader:`uniform float uClock,uOpacity;varying vec3 vSeed;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}void main(){vec2 p=(gl_PointCoord-.5)*2.;float n=noise(p*3.+vSeed.xy*11.+vec2(uClock*.024,-uClock*.016))*.65+noise(p*7.-uClock*.018)*.35;float r=length(p*vec2(.85,1.15));float a=exp(-r*r*2.6)*(1.-smoothstep(.45,.98,r+(n-.5)*.24));vec3 color=mix(vec3(.55,.39,.23),vec3(1.30,1.04,.67),clamp(n*.7+vSeed.y*.4,0.,1.));gl_FragColor=vec4(color,a*uOpacity*.25);}`});
+    vertexShader:`attribute vec3 aSeed;uniform float uClock,uRatio,uScale;varying vec3 vSeed,vWorld,vRight,vUp;varying float vRadius;void main(){vec3 p=position;float a=uClock*.052*(.7+aSeed.x*.6),c=cos(a),s=sin(a);p.xz=mat2(c,-s,s,c)*p.xz;p.y+=sin(uClock*.36+aSeed.x*9.)*.23;vec4 world=modelMatrix*vec4(p,1.),mv=viewMatrix*world;gl_Position=projectionMatrix*mv;float diameter=(1.3+aSeed.y*1.4)*uScale;gl_PointSize=min(210.*uRatio,diameter*uRatio*650./max(1.,-mv.z));vSeed=aSeed;vWorld=world.xyz;vRight=vec3(viewMatrix[0][0],viewMatrix[1][0],viewMatrix[2][0]);vUp=vec3(viewMatrix[0][1],viewMatrix[1][1],viewMatrix[2][1]);vRadius=diameter*.5;}`,
+    fragmentShader:`uniform float uClock,uOpacity,uCeiling;varying vec3 vSeed,vWorld,vRight,vUp;varying float vRadius;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}void main(){vec2 p=(gl_PointCoord-.5)*2.;float n=noise(p*3.+vSeed.xy*11.+vec2(uClock*.095,-uClock*.055))*.65+noise(p*7.-uClock*.065)*.35;float r=length(p*vec2(.85,1.15));float a=exp(-r*r*2.6)*(1.-smoothstep(.45,.98,r+(n-.5)*.24));vec3 w=vWorld+(vRight*p.x-vUp*p.y)*vRadius;a*=1.-smoothstep(uCeiling-.35,uCeiling,w.y);a*=smoothstep(7.2,9.2,length(w.xz-vec2(0.,-.1)));vec3 color=mix(vec3(.55,.39,.23),vec3(1.30,1.04,.67),clamp(n*.7+vSeed.y*.4,0.,1.));gl_FragColor=vec4(color,a*uOpacity*.33);}`});
   const mist=new THREE.Points(fogGeometry,fogMaterial);mist.name='Slowly flowing island mist';mist.userData.revealIgnore=true;mist.frustumCulled=false;mist.renderOrder=25;root.add(mist);
-  return {root,cliff,boulders,mist,uniforms,quality(light,ratio){fogGeometry.setDrawRange(0,light?54:count);uniforms.uRatio.value=ratio;},update(opacity,ambient,scale,reduced){uniforms.uOpacity.value=opacity;uniforms.uClock.value=reduced?0:ambient;uniforms.uScale.value=scale;mist.visible=opacity>0;}};
+  return {root,cliff,boulders,mist,uniforms,quality(light,ratio){fogGeometry.setDrawRange(0,light?54:count);uniforms.uRatio.value=ratio;},update(opacity,ambient,scale,reduced){uniforms.uOpacity.value=opacity;uniforms.uClock.value=reduced?0:ambient;uniforms.uScale.value=scale;uniforms.uCeiling.value=parent.position.y-.18*scale;mist.visible=opacity>0;}};
 }
