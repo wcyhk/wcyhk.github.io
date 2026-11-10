@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
 const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
 const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
-const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount,rebirthState,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,enemyPose,SIEGE_DURATION,materializationState,sphereHitsIsland,processionalStep,awakeningCameraKeys,holyRadius,holyContact,swarmPose,smootherStep}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
 test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
   let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
@@ -26,11 +26,11 @@ test('The void cannot ignite before all three beacons, and replay immediately re
 test('The restoration requires every beacon, follows a monotonic story clock and resets on replay',()=>{
   for(const mask of [0,1,2,3,4,5,6]){const s=rebirthState(12,mask);assert.equal(s.sun,0);assert.equal(s.palaces,0);assert.equal(s.sanctum,0);assert.equal(s.title,false);assert.equal(advanceRebirth(8,.05,mask),0);}
   let elapsed=0,previous=rebirthState(0,7);
-  for(let i=0;i<241;i++){elapsed=advanceRebirth(elapsed,.05,7);const next=rebirthState(elapsed,7);for(const k of ['sun','wave','cleanse','palaces','sanctum']){assert.ok(next[k]>=previous[k]&&next[k]<=1);assert.ok(Number.isFinite(next[k]));}previous=next;}
+  for(let i=0;i<Math.ceil(REBIRTH_DURATION/.05)+1;i++){elapsed=advanceRebirth(elapsed,.05,7);const next=rebirthState(elapsed,7);for(const k of ['sun','wave','cleanse','palaces','sanctum']){assert.ok(next[k]>=previous[k]&&next[k]<=1);assert.ok(Number.isFinite(next[k]));}previous=next;}
   assert.equal(elapsed,REBIRTH_DURATION);assert.equal(previous.complete,true);assert.equal(previous.palaces,1);assert.equal(previous.sanctum,1);
   assert.equal(rebirthState(.8,7).palaces,0);assert.equal(rebirthState(1,7).title,false);assert.equal(rebirthState(1.5,7).title,true);
-  assert.ok(rebirthState(.05,7).sun>0);assert.ok(rebirthState(.05,7).cleanse>0);assert.equal(rebirthState(.65,7).cleanse,1);assert.equal(rebirthState(1.15,7).wave,1);
-  assert.equal(advanceRebirth(0,.016,7,true),12);assert.equal(rebirthState(advanceRebirth(12,.05,0),0).sun,0);
+  assert.ok(rebirthState(.05,7).sun>0);assert.equal(rebirthState(1.4,7).wave,0);assert.ok(Math.abs(rebirthState(12.2,7).wave-1)<1e-8);
+  assert.equal(advanceRebirth(0,.016,7,true),REBIRTH_DURATION);assert.equal(rebirthState(advanceRebirth(12,.05,0),0).sun,0);
 });
 
 test('Siege advances only while the scene is being viewed and automatically awakens all missing beacons once',()=>{
@@ -43,11 +43,11 @@ test('Siege advances only while the scene is being viewed and automatically awak
   assert.equal(advanceSiege(0,.05,false,false),0);assert.equal(resolveSiege(newJourney(),0).automatic,false);
 });
 
-test('All three enemies advance towards the altar and recoil from light',()=>{
+test('All three enemies advance towards the altar and remain in place before wave contact',()=>{
   for(let i=0;i<3;i++){
     const a=enemyPose(i,0,0,0),b=enemyPose(i,32,0,0),r=enemyPose(i,32,.6,7);
     assert.ok(Math.hypot(b.position[0],b.position[2])<Math.hypot(a.position[0],a.position[2]));assert.ok(Math.hypot(b.position[0],b.position[2])>6.8);
-    assert.ok(Math.hypot(r.position[0],r.position[2])>Math.hypot(b.position[0],b.position[2]));assert.deepEqual(enemyPose(i,32,0,0,true).position,enemyPose(i,0,0,0,true).position);
+    assert.ok(Math.abs(Math.hypot(r.position[0],r.position[2])-Math.hypot(b.position[0],b.position[2]))<1e-8);assert.deepEqual(enemyPose(i,32,0,0,true).position,enemyPose(i,0,0,0,true).position);
   }
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera());
   for(const [siege,rebirth,mask] of [[0,0,0],[16,0,1],[31.9,0,3],[32,.02,7],[32,.3,7],[32,.65,7],[32,4,7],[32,7,7],[32,12,7],[0,0,0]]){
@@ -61,9 +61,9 @@ test('Architecture manifests at fixed transforms with a depth prepass, then beco
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,1.2,.15,160));
   world.update(0,1,0,.05,7,2,20);world.scene.updateMatrixWorld();
   const manifests=[...world.reborn.palaces.map(p=>p.manifest),world.reborn.centreManifest,world.reborn.floorManifest];
-  const snapshots=manifests.map(m=>m.meshes.map(o=>o.matrixWorld.toArray()));
+  manifests.forEach(m=>m.update(.5,2));const snapshots=manifests.map(m=>m.meshes.map(o=>o.matrixWorld.toArray()));
   for(const m of manifests){assert.ok(m.materials.every(x=>x.opacity>0&&x.opacity<1));assert.ok(m.passes.every(x=>x.visible&&x.material.colorWrite===false));assert.ok(m.materials.every(x=>x.depthFunc===THREE.EqualDepth));}
-  for(const elapsed of [4,6,9,12]){world.update(elapsed,1,0,.05,7,elapsed,20);world.scene.updateMatrixWorld();manifests.forEach((m,i)=>m.meshes.forEach((o,j)=>{assert.deepEqual(o.matrixWorld.toArray(),snapshots[i][j]);assert.deepEqual(m.passes[j].matrixWorld.toArray(),o.matrixWorld.toArray(),'The depth shell must exactly match every materialized mesh.');}));}
+  for(const elapsed of [4,6,9,26]){world.update(elapsed,1,0,.05,7,elapsed,20);world.scene.updateMatrixWorld();manifests.forEach((m,i)=>m.meshes.forEach((o,j)=>{assert.deepEqual(o.matrixWorld.toArray(),snapshots[i][j]);assert.deepEqual(m.passes[j].matrixWorld.toArray(),o.matrixWorld.toArray(),'The depth shell must exactly match every materialized mesh.');}));}
   for(const m of manifests){assert.ok(m.passes.every(x=>!x.visible));assert.ok(m.materials.every(x=>x.opacity===1&&x.depthWrite));}
   world.update(0,0,0,.05,0,0,0);assert.ok(world.reborn.palaces.every(p=>p.manifest.materials.every(m=>m.opacity===0)));world.dispose();
 });
@@ -137,10 +137,10 @@ test('The shared processional path clears every beacon foundation in both worlds
   const world=createWorldScene(THREE,new THREE.PerspectiveCamera());const blocks=world.stairs.children.filter(o=>o.geometry===world.stairs.children[0].geometry);assert.equal(blocks.length,19);blocks.forEach((o,i)=>{const p=processionalStep(i);assert.equal(o.position.x,p.x);assert.equal(o.position.z,p.z);});world.dispose();
 });
 
-test('Awakening first flies close at eye level, then pulls back and rises to an overhead view',()=>{
+test('Awakening holds a solid near eye-level view, then gently pulls back to a half-overhead view',()=>{
   for(const phone of [false,true]){const pos=phone?[0,7.4,26]:[1.5,6.9,18],target=[0,1.2,-1.8],keys=awakeningCameraKeys(pos,target,phone);assert.deepEqual(keys[0].position,pos);assert.notEqual(keys[0].position,pos);
-    const distance=k=>Math.hypot(...k.position.map((v,i)=>v-k.target[i])),near=keys[1],end=keys.at(-1);assert.ok(distance(near)<distance(keys[0]));assert.ok(near.position[1]-near.target[1]<2.1);assert.ok(Math.atan2(end.position[1]-end.target[1],Math.hypot(end.position[0]-end.target[0],end.position[2]-end.target[2]))>.8);
-    for(let i=1;i<keys.length;i++){assert.ok(keys[i].at>keys[i-1].at);assert.ok(distance(keys[i])>=10&&distance(keys[i])<40);if(i>1){assert.ok(distance(keys[i])>distance(keys[i-1]));assert.ok(keys[i].position[1]>keys[i-1].position[1]);}}assert.equal(end.at,12);
+    const distance=k=>Math.hypot(...k.position.map((v,i)=>v-k.target[i])),near=keys[1],end=keys.at(-1);assert.ok(distance(near)<distance(keys[0]));assert.ok(near.position[1]-near.target[1]<2.1);assert.ok(Math.atan2(end.position[1]-end.target[1],Math.hypot(end.position[0]-end.target[0],end.position[2]-end.target[2]))>.5);
+    for(let i=1;i<keys.length;i++){assert.ok(keys[i].at>keys[i-1].at);assert.ok(distance(keys[i])>=10&&distance(keys[i])<40);if(i>1){assert.ok(distance(keys[i])>=distance(keys[i-1]));assert.ok(keys[i].position[1]>=keys[i-1].position[1]);}}assert.equal(end.at,26);assert.deepEqual(keys[1].position,keys[2].position);assert.ok(keys[2].at-keys[1].at>=7);
   }
 });
 
@@ -148,4 +148,31 @@ test('The dragon reaches the front line before either layout triggers the altar 
   for(const aspect of [1.2,.48]){const world=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));let guard=null;for(let t=0;t<=32;t+=.05){world.update(t*.65,0,0,.05,0,0,t);if(world.destruction.altarThreat){guard=t;break;}}
     assert.ok(guard>15);const dragon=enemyPose(2,guard,0,0),elder=enemyPose(0,guard,0,0);assert.ok(Math.hypot(dragon.position[0],dragon.position[2])<=Math.hypot(elder.position[0],elder.position[2])+1);assert.ok(dragon.position[2]>-7);assert.deepEqual([...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort(),[0,1,2]);world.dispose();
   }
+});
+
+
+test('Holy light reaches near enemies before distant ones; no enemy clears before radial contact',()=>{
+  assert.equal(holyRadius(1.4,7),0);assert.equal(holyRadius(5,0),0);assert.equal(holyContact([10,3.9,-3.2],1,2,7).touched,false);
+  assert.equal(holyContact([10,3.9,-3.2],1,3.4,7).touched,true);assert.equal(holyContact([30,3.9,-3.2],1,3.4,7).touched,false);
+  for(let t=0;t<=26;t+=.1){for(const d of [8,15,30,40]){const hit=holyContact([d,3.9,-3.2],1,t,7);if(hit.cleared)assert.ok(holyRadius(t,7)>=d+1);}}
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());w.update(0,1,0,.05,7,1,0);assert.equal(w.reborn.ancients.actors.filter(a=>a.group.visible).length,3);w.update(0,1,0,.05,7,26,0);assert.equal(w.reborn.ancients.actors.filter(a=>a.group.visible).length,0);assert.ok(w.reborn.swarm.records.every(r=>r.cleared));w.update(0,0,0,.05,0,0,0);assert.equal(w.reborn.ancients.actors.filter(a=>a.group.visible).length,3);assert.equal(w.reborn.swarm.records.filter(r=>!r.cleared).length,48);w.dispose();
+});
+
+test('Flying fiends cover all eight directions even in light mode, advance without entering the altar, and animate wings',()=>{
+  const w=createWorldScene(THREE,new THREE.PerspectiveCamera());for(const light of [false,true]){w.quality(light,1);w.update(0,0,0,.05,0,0,0);assert.equal(w.reborn.swarm.records.length,light?24:48);const sectors=new Set(w.reborn.swarm.records.map(r=>Math.floor((Math.atan2(r.position[2],r.position[0])+Math.PI)/(Math.PI/4))%8));assert.equal(sectors.size,8);
+    for(const r of w.reborn.swarm.records){const a=swarmPose(r.index,0,0,0),b=swarmPose(r.index,32,0,0);assert.ok(Math.hypot(b.position[0],b.position[2])<Math.hypot(a.position[0],a.position[2]));assert.ok(Math.hypot(b.position[0],b.position[2])>8.7);assert.notEqual(swarmPose(r.index,2,0,0).flap,swarmPose(r.index,3,0,0).flap);}}
+  w.dispose();
+});
+
+test('Camera interpolation has zero endpoint velocity and acceleration for a smooth hold and pullback',()=>{
+  const h=.0001;assert.equal(smootherStep(0),0);assert.equal(smootherStep(1),1);assert.ok(smootherStep(h)/h<.00001);assert.ok((1-smootherStep(1-h))/h<.00001);for(let i=0;i<=100;i++)assert.ok(smootherStep(i/100)>=0&&smootherStep(i/100)<=1);
+});
+
+
+test('Every palace is fully solid before the eye-level hold ends, including immediate activation',()=>{
+  for(const aspect of [1.2,.48])for(const siege of [0,19,26]){const w=createWorldScene(THREE,new THREE.PerspectiveCamera(43,aspect,.15,160));w.update(0,1,0,.05,7,11,siege);assert.ok(w.reborn.palaces.every(p=>p.manifest.materials.every(m=>m.opacity===1&&m.depthWrite)));w.dispose();}
+});
+
+test('The frontal swarm stays above the initial and close camera corridors',()=>{
+  for(const siege of [0,19,26])for(const phone of [false,true]){const keys=awakeningCameraKeys(phone?[0,7.4,26]:[1.5,6.9,18],[0,1.2,-1.8],phone);for(let t=0;t<=11;t+=.25){const blend=smootherStep(Math.min(1,t/3.2)),camera=keys[0].position.map((v,i)=>v+(keys[1].position[i]-v)*blend);for(let i=0;i<48;i++){const p=swarmPose(i,siege,t,7);if(!holyContact(p.position,1.8,t,7).cleared)assert.ok(Math.hypot(...p.position.map((v,k)=>v-camera[k]))>4,'A flying fiend must not clip the camera.');}}}
 });

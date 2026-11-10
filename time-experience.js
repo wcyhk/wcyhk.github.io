@@ -1,4 +1,4 @@
-import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION,awakeningCameraKeys} from './world-model.mjs?v=holy-ascent-20261110';
+import {BEACONS,activateBeacon,newJourney,clamp,renderScale,frameDelta,isTap,flowLabel,beaconAnchors,advanceRebirth,REBIRTH_DURATION,advanceSiege,siegeState,resolveSiege,SIEGE_DURATION,awakeningCameraKeys,smootherStep} from './world-model.mjs?v=slow-sanctuary-20261110';
 
 const root=document.querySelector('.time-studio');
 if(root){
@@ -46,7 +46,7 @@ if(root){
     if(initialized||disposed)return;initialized=true;
     try{
       const [THREE,{OrbitControls},{createWorldScene},{createWorldPost}]=await Promise.all([
-        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=holy-ascent-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
+        import('./assets/vendor/three.module.js'),import('./assets/vendor/OrbitControls.js'),import('./world-scene.mjs?v=slow-sanctuary-20261110'),import('./world-post.mjs?v=worlds-end-polish-20261110'),
       ]);
       if(disposed||!canvas.isConnected)return;
       const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -92,16 +92,16 @@ if(root){
         siegeElapsed=advanceSiege(siegeElapsed,dt,storyVisible,journey.complete);
         const rescue=resolveSiege(journey,world.destruction.altarThreat?SIEGE_DURATION:siegeElapsed);
         if(rescue.automatic){journey=rescue.journey;root.dataset.awakening='automatic';updateJourney();announce('暗影逼近祭壇，守護機制已自動喚醒三座界標，釋放聖光。');$('#time-instructions').textContent='守護機制已自動覺醒，祭壇安全。';root.dispatchEvent(new CustomEvent('world-beacon',{detail:{id:null,newLight:true,complete:true,automatic:true}}));}
-        if(tween){tween.elapsed+=dt;const keys=tween.keys,index=keys.findIndex((key,i)=>i>0&&tween.elapsed<=key.at),end=index<0?keys.length-1:index,a=keys[end-1],b=keys[end],t=clamp((tween.elapsed-a.at)/(b.at-a.at),0,1),smooth=t*t*(3-2*t);camera.position.lerpVectors(a.position,b.position,smooth);controls.target.lerpVectors(a.target,b.target,smooth);if(tween.elapsed>=12)tween=null;}
+        if(tween){tween.elapsed+=dt;const keys=tween.keys,index=keys.findIndex((key,i)=>i>0&&tween.elapsed<=key.at),end=index<0?keys.length-1:index,a=keys[end-1],b=keys[end],t=clamp((tween.elapsed-a.at)/(b.at-a.at),0,1),smooth=smootherStep(t);camera.position.lerpVectors(a.position,b.position,smooth);controls.target.lerpVectors(a.target,b.target,smooth);if(tween.elapsed>=REBIRTH_DURATION)tween=null;}
         rebirthElapsed=advanceRebirth(rebirthElapsed,dt,journey.mask,motion.matches);
         const moving=controls.update(),story=world.update(time,energy,pulse,dt,journey.mask,rebirthElapsed,siegeElapsed,motion.matches);world.scene.updateMatrixWorld();
-        storyText(story.title);root.dataset.rebirth=rebirthElapsed.toFixed(2);root.dataset.shattered=String(world.destruction.records.filter(r=>r.shattered).length);root.dataset.hitBy=[...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort().join(',');
+        storyText(story.title);root.dataset.rebirth=rebirthElapsed.toFixed(2);root.dataset.swarm=String(world.reborn.swarm.records.filter(r=>!r.cleared).length);root.dataset.ancients=String(world.reborn.ancients.actors.filter(a=>a.group.visible).length);root.dataset.holyRadius=(story.wave*54).toFixed(2);root.dataset.shattered=String(world.destruction.records.filter(r=>r.shattered).length);root.dataset.hitBy=[...new Set(world.destruction.records.filter(r=>r.shattered).map(r=>r.hitBy))].sort().join(',');
         const threat=siegeState(siegeElapsed);root.dataset.siege=siegeElapsed.toFixed(2);root.style.setProperty('--siege',String(journey.complete?0:threat.progress));root.style.setProperty('--holy-flash',String(motion.matches?0:story.flare*.32));
         const threatLabel=journey.complete?(root.dataset.awakening==='automatic'?'界標自動覺醒 · 祭壇安全':'聖光已釋放 · 祭壇安全'):threat.urgency>.75?'暗影逼近 · 守護即將覺醒':'暗影正在逼近祭壇';if($('#world-threat-label').textContent!==threatLabel)$('#world-threat-label').textContent=threatLabel;
         const storyPhase=story.complete?'reborn':journey.complete?'purifying':'dark';
         if(storyPhase==='reborn'&&root.dataset.story!==storyPhase)announce('世界的復甦。黑暗身影已消散，雲上宮殿與中央聖域重新建立。');
         root.dataset.story=storyPhase;
-        {const chapter=journey.complete?(story.complete?'世界的復甦。希望重回世界中心。':story.title?'聖光凝聚，宮殿與聖域正在重現。':'聖光反擊，黑暗即刻退散。'):threat.urgency>.75?'黑暗已逼近，界標即將自動覺醒。':'暗影正逼近祭壇。點亮三座界標，釋放聖光。';if($('#world-chapter').textContent!==chapter)$('#world-chapter').textContent=chapter;}
+        {const chapter=journey.complete?(story.complete?'世界的復甦。希望重回世界中心。':story.title?(rebirthElapsed>=11?'宮殿重現，聖光照耀世界中心。':'聖光擴散，宮殿與聖域正在重現。'):'聖光反擊，黑暗即刻退散。'):threat.urgency>.75?'黑暗已逼近，界標即將自動覺醒。':'暗影正逼近祭壇。點亮三座界標，釋放聖光。';if($('#world-chapter').textContent!==chapter)$('#world-chapter').textContent=chapter;}
         world.beacons.forEach((b,i)=>{b.group.getWorldPosition(markerWorld[i]);markerWorld[i].y+=1.65;markerNdc[i].copy(markerWorld[i]).project(camera);});
         const anchors=beaconAnchors(markerNdc,host.clientWidth,host.clientHeight);
         anchors.forEach((a,i)=>{const el=$(`[data-coordinate="${BEACONS[i].id}"]`);el.style.left=`${a.x}px`;el.style.top=`${a.y}px`;el.style.opacity=a.visible?'1':'0';el.style.pointerEvents=a.visible?'auto':'none';});

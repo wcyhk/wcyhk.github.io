@@ -1,6 +1,8 @@
-import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep} from './world-model.mjs?v=holy-ascent-20261110';
-import {createAncients} from './world-creatures.mjs?v=holy-ascent-20261110';
-import {createManifestation} from './world-reveal.mjs?v=holy-ascent-20261110';
+import {seededRandom,rebirthState,siegeState,materializationState,cosmicSpread,processionalStep,holyRadius,smootherStep,HOLY_ORIGIN} from './world-model.mjs?v=slow-sanctuary-20261110';
+import {createAncients} from './world-creatures.mjs?v=slow-sanctuary-20261110';
+import {createManifestation} from './world-reveal.mjs?v=slow-sanctuary-20261110';
+
+import {createDemonSwarm} from './world-swarm.mjs?v=slow-sanctuary-20261110';
 
 const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*w;}`;
 
@@ -8,10 +10,10 @@ const vertex=`varying vec3 vW,vN;void main(){vec4 w=modelMatrix*vec4(position,1.
 export function createRebirthWorld(THREE,scene,camera,surfaces){
   const random=seededRandom(312),darkness=new THREE.Group(),heavens=new THREE.Group(),sanctum=new THREE.Group();
   darkness.name='Ancient watchers';heavens.name='Cloud palaces';sanctum.name='Sacred world centre';scene.add(darkness,heavens,sanctum);
-  const u={time:{value:0},cleanse:{value:0},sun:{value:0},wave:{value:0},ratio:{value:1},camera:{value:camera.position},threat:{value:0},enemyClock:{value:0},sources:{value:[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]}};
+  const u={time:{value:0},cleanse:{value:0},sun:{value:0},wave:{value:0},ratio:{value:1},camera:{value:camera.position},threat:{value:0},enemyClock:{value:0},radius:{value:0},sources:{value:[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()]}};
   const sphere=new THREE.SphereGeometry(1,24,18),cone=new THREE.ConeGeometry(1,1,16),torus=new THREE.TorusGeometry(1,.028,6,96);
   function mesh(group,geo,material,pos,scale=[1,1,1],rotation=[0,0,0]){const o=new THREE.Mesh(geo,material);o.position.set(...pos);o.scale.set(...scale);o.rotation.set(...rotation);group.add(o);return o;}
-  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors;
+  const ancients=createAncients(THREE,darkness,camera),watchers=ancients.actors,swarm=createDemonSwarm(THREE,darkness);
 
   const marble=new THREE.MeshStandardMaterial({map:surfaces.inlayMap,normalMap:surfaces.normalMap,normalScale:new THREE.Vector2(.13,.13),color:0xe9e6d9,metalness:.22,roughness:.38,envMapIntensity:1.1});
   const gilt=new THREE.MeshStandardMaterial({color:0xe5bc6b,metalness:.84,roughness:.23,envMapIntensity:1.5});
@@ -85,7 +87,7 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   for(let i=0;i<particles;i++)seeds.set([random()*Math.PI*2,random()*2-1,random(),random()],i*4);
   pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(particles*3),3));pg.setAttribute('aP',new THREE.BufferAttribute(seeds,4));
   const pm=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uTime:u.time,uSun:u.sun,uWave:u.wave,uRatio:u.ratio},
-    vertexShader:`attribute vec4 aP;uniform float uTime,uSun,uWave,uRatio;varying float vA;void main(){float r=3.+uWave*39.*(.4+aP.z*.6);float h=aP.y,s=sqrt(max(0.,1.-h*h));float a=aP.x+uTime*.015;vec3 p=vec3(cos(a)*s*r,h*r,sin(a)*s*r)+vec3(0,3.9,-3.2);p.y+=sin(uTime*.1+aP.w*8.)*.5;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((1.+aP.w*2.)*uRatio*25./max(.5,-mv.z),1.,6.);vA=uSun*(.35+.65*sin(aP.z*40.+uTime*.14)*sin(aP.z*40.+uTime*.14));}`,
+    vertexShader:`attribute vec4 aP;uniform float uTime,uSun,uWave,uRatio;varying float vA;void main(){float r=mix(0.,54.*uWave,.94+aP.z*.06);float h=aP.y,s=sqrt(max(0.,1.-h*h));float a=aP.x+uTime*.015;vec3 p=vec3(cos(a)*s*r,h*r,sin(a)*s*r)+vec3(0,3.9,-3.2);p.y+=sin(uTime*.1+aP.w*8.)*.5;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((1.+aP.w*2.)*uRatio*25./max(.5,-mv.z),1.,6.);vA=uSun*(.35+.65*sin(aP.z*40.+uTime*.14)*sin(aP.z*40.+uTime*.14));}`,
     fragmentShader:`varying float vA;void main(){vec2 p=(gl_PointCoord-.5)*2.;float r=length(p);if(r>1.)discard;float star=exp(-abs(p.x)*23.)+exp(-abs(p.y)*23.);gl_FragColor=vec4(vec3(2.6,1.9,.8),vA*(exp(-r*r*7.)+star*.2)*(1.-smoothstep(.7,1.,r)));}`});
   const motes=new THREE.Points(pg,pm);motes.frustumCulled=false;scene.add(motes);
   const gatherCount=1400,gatherGeo=new THREE.BufferGeometry(),destinations=new Float32Array(gatherCount*3),gatherSeeds=new Float32Array(gatherCount*4),origins=Array.from({length:4},()=>new THREE.Vector3()),scales=new Float32Array([1,1,1,1]),opacity=new Float32Array(4),gatherLight=new Float32Array(4);
@@ -98,23 +100,25 @@ export function createRebirthWorld(THREE,scene,camera,surfaces){
   const menaceCount=1800,menaceSeeds=new Float32Array(menaceCount*4),menaceGeo=new THREE.BufferGeometry();
   for(let i=0;i<menaceCount;i++)menaceSeeds.set([i%3,random(),random(),random()],i*4);
   menaceGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(menaceCount*3),3));menaceGeo.setAttribute('aP',new THREE.BufferAttribute(menaceSeeds,4));
-  const menace=new THREE.Points(menaceGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uThreat:u.threat,uClock:u.enemyClock,uCleanse:u.cleanse,uSources:u.sources,uRatio:u.ratio},
-    vertexShader:`attribute vec4 aP;uniform float uThreat,uClock,uCleanse,uRatio;uniform vec3 uSources[3];varying float vA;varying vec3 vColor;void main(){vec3 source=uSources[0];if(aP.x>.5)source=uSources[1];if(aP.x>1.5)source=uSources[2];float f=fract(aP.y+uClock*(.16+uThreat*.11));float swirl=uClock*(1.7+aP.z)+aP.w*6.283;vec3 vortex=vec3(cos(swirl),sin(swirl),sin(swirl*.7))*(.4+aP.z*1.0)*(1.-f);vec3 p=mix(source,vec3(0.,.5,-.2),f)+vortex;p.y+=sin(f*3.14159265)*(1.+aP.z*2.);p.x+=sin(f*15.+aP.w*6.)*.3;p.z+=cos(f*12.+aP.w*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;float burst=pow(max(0.,sin(uClock*2.1-aP.x*.8)),6.);gl_PointSize=clamp((1.+aP.z*2.+burst*2.)*uRatio*32./max(1.,-mv.z),1.,7.);vA=uThreat*(1.-uCleanse)*sin(f*3.14159265)*(.7+burst*1.3);vColor=aP.x<.5?vec3(.9,.18,2.):aP.x<1.5?vec3(2.,.08,.22):vec3(.12,.6,2.1);}`,
+  const menace=new THREE.Points(menaceGeo,new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{uThreat:u.threat,uClock:u.enemyClock,uCleanse:u.cleanse,uSources:u.sources,uRadius:u.radius,uRatio:u.ratio},
+    vertexShader:`attribute vec4 aP;uniform float uThreat,uClock,uCleanse,uRatio,uRadius;uniform vec3 uSources[3];varying float vA;varying vec3 vColor;void main(){vec3 source=uSources[0];if(aP.x>.5)source=uSources[1];if(aP.x>1.5)source=uSources[2];float f=fract(aP.y+uClock*(.16+uThreat*.11));float swirl=uClock*(1.7+aP.z)+aP.w*6.283;vec3 vortex=vec3(cos(swirl),sin(swirl),sin(swirl*.7))*(.4+aP.z*1.0)*(1.-f);vec3 p=mix(source,vec3(0.,.5,-.2),f)+vortex;p.y+=sin(f*3.14159265)*(1.+aP.z*2.);p.x+=sin(f*15.+aP.w*6.)*.3;p.z+=cos(f*12.+aP.w*6.)*.3;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;float burst=pow(max(0.,sin(uClock*2.1-aP.x*.8)),6.);gl_PointSize=clamp((1.+aP.z*2.+burst*2.)*uRatio*32./max(1.,-mv.z),1.,7.);vA=uThreat*step(uRadius,length(p-vec3(0.,3.9,-3.2)))*sin(f*3.14159265)*(.7+burst*1.3);vColor=aP.x<.5?vec3(.9,.18,2.):aP.x<1.5?vec3(2.,.08,.22):vec3(.12,.6,2.1);}`,
     fragmentShader:`varying float vA;varying vec3 vColor;void main(){float r=length(gl_PointCoord-.5)*2.;if(r>1.)discard;gl_FragColor=vec4(vColor,exp(-r*r*5.)*vA*.85);}`}));menace.frustumCulled=false;scene.add(menace);
   return {
-    darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,centreManifest,floorManifest,
-    quality(light,ratio){pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);menaceGeo.setDrawRange(0,light?600:menaceCount);u.ratio.value=ratio;},
-    update(time,elapsed,mask,siegeElapsed=0,reduced=false){const s=rebirthState(elapsed,mask),threat=siegeState(siegeElapsed);u.time.value=time;u.sun.value=s.sun;u.cleanse.value=s.cleanse;u.wave.value=s.wave;u.threat.value=.2+threat.urgency*.8;u.enemyClock.value=reduced?0:siegeElapsed;
+    darkness,heavens,sanctum,watchers,palaces,repairPieces,ancients,swarm,centreManifest,floorManifest,dispose(){ancients.dispose();},
+    quality(light,ratio){swarm.quality(light);pg.setDrawRange(0,light?650:particles);gatherGeo.setDrawRange(0,light?500:gatherCount);cloudGeo.setDrawRange(0,light?90:cloudCount);menaceGeo.setDrawRange(0,light?600:menaceCount);u.ratio.value=ratio;},
+    update(time,elapsed,mask,siegeElapsed=0,reduced=false){const s=rebirthState(elapsed,mask),threat=siegeState(siegeElapsed);u.time.value=time;u.sun.value=s.sun;u.cleanse.value=s.cleanse;u.wave.value=s.wave;u.radius.value=holyRadius(elapsed,mask);u.threat.value=.2+threat.urgency*.8;u.enemyClock.value=reduced?0:siegeElapsed;
       darkness.visible=s.cleanse<1;heavens.visible=s.palaces>0;sanctum.visible=s.sanctum>0;rays.visible=s.sun>0;motes.visible=s.sun>0;waveShell.visible=s.wave>0&&s.wave<1;
-      waveShell.scale.setScalar(2+s.wave*43);rays.quaternion.copy(camera.quaternion);menace.visible=s.cleanse<1;
+      waveShell.scale.setScalar(Math.max(.001,u.radius.value));rays.quaternion.copy(camera.quaternion);menace.visible=s.cleanse<1;
       // Keep landmarks within the portrait field without changing their real 3D interaction space.
       const spread=cosmicSpread(camera.aspect);
-      ancients.update(siegeElapsed,elapsed,mask,reduced,spread);
+      ancients.update(siegeElapsed,elapsed,mask,reduced,spread);swarm.update(siegeElapsed,elapsed,mask,reduced);
       watchers.forEach((w,i)=>{if(i===2)w.head.localToWorld(u.sources.value[i].set(0,-.1,1.3));else w.orb.getWorldPosition(u.sources.value[i]);});
       const palaceSpread=spread*(camera.aspect<.8?.67:.88),palaceScale=camera.aspect<.8?.68:1;
       palaces.forEach(p=>{const reveal=materializationState(elapsed,p.index,mask);
         p.root.position.set(p.x*palaceSpread,p.y,p.root.position.z);p.root.scale.setScalar(p.scale*palaceScale);p.root.rotation.set(0,0,0);
         p.layers.forEach(layer=>{layer.position.set(0,0,0);layer.rotation.set(0,0,0);layer.scale.setScalar(1);});
+        const enemy=watchers[[0,2,1][p.index]],centre=enemy.group.position,clearAt=1.4+(Math.hypot(centre.x-HOLY_ORIGIN[0],centre.y+1-HOLY_ORIGIN[1],centre.z-HOLY_ORIGIN[2])+6.5)/5;
+        reveal.opacity*=smootherStep((elapsed-clearAt)/1.5);
         p.manifest.update(reveal.opacity,time);p.halo.visible=reveal.opacity>0;p.constructionRing.visible=false;
         origins[p.index].copy(p.root.position);scales[p.index]=p.root.scale.x;opacity[p.index]=reveal.opacity;gatherLight[p.index]=reveal.particles;
       });

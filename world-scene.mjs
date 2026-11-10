@@ -1,7 +1,7 @@
-import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=holy-ascent-20261110';
+import {BEACONS,islandHeight,seededRandom,cosmicSpread,processionalStep} from './world-model.mjs?v=slow-sanctuary-20261110';
 import {createSurfaceKit} from './world-materials.mjs?v=worlds-end-polish-20261110';
-import {createIslandDestruction} from './world-destruction.mjs?v=holy-ascent-20261110';
-import {createRebirthWorld} from './world-rebirth.mjs?v=holy-ascent-20261110';
+import {createIslandDestruction} from './world-destruction.mjs?v=slow-sanctuary-20261110';
+import {createRebirthWorld} from './world-rebirth.mjs?v=slow-sanctuary-20261110';
 
 const noiseGLSL=`
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -160,8 +160,8 @@ export function createWorldScene(THREE,camera){
       const spread=cosmicSpread(camera.aspect);
       destruction.update(siegeElapsed,rebirthElapsed,mask,reborn.ancients.collisionSpheres(),spread,camera.aspect<.8);
       const shadowPhase=`${destruction.records.filter(r=>r.shattered).length}:${mask!==7?0:rebirthElapsed<.65?1:rebirthElapsed<7.8?2:3}`;if(shadowPhase!==lastShadowPhase){key.shadow.needsUpdate=true;lastShadowPhase=shadowPhase;}
-      ruins.position.y=0;ruins.visible=story.cleanse<1;stairs.visible=story.cleanse<1;
-      mainIsland.children[0].visible=story.cleanse<1;
+      ruins.position.y=0;ruins.visible=story.sun<1;stairs.visible=story.sun<1;
+      mainIsland.children[0].visible=story.sun<1;
       topMaterial.color.setRGB(1+story.sanctum*.5,1+story.sanctum*.4,1+story.sanctum*.23);
       scene.fog.color.setRGB(.063+story.sun*.02,.094+story.sun*.026,.176+story.sun*.025);
       gate.rotation.z=Math.sin(time*.04)*.025;gateAura.material.opacity=.12+energy*.12+dawn*.3;disk.rotation.z=.1+time*.009;orbital.rotation.z=.28+time*.008;orbital2.rotation.y=.5-time*.005;coreLight.intensity=3+energy*10+dawn*65;key.intensity=2.5+dawn*3.3;key.color.set(dawn>.01?0xffd09a:0xc8d6e5);
@@ -173,6 +173,6 @@ export function createWorldScene(THREE,camera){
       for(const f of stairData)f.block.position.y=f.y+Math.sin(time*.2+f.phase)*.018*(1-energy);
       return story;
     },
-    dispose(){const geometries=new Set(),materials=new Set();scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])materials.add(m);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());radialTexture.dispose();surfaces.dispose();key.shadow.map?.dispose();},
+    dispose(){reborn.dispose();const geometries=new Set(),materials=new Set();scene.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])materials.add(m);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());radialTexture.dispose();surfaces.dispose();key.shadow.map?.dispose();},
   };
 }
