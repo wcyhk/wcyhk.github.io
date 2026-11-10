@@ -1,19 +1,49 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {clamp,flowLabel,renderScale,seededRandom,particlePosition} from '../time-math.mjs';
-const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const js=readFileSync(new URL('../time-experience.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../time-experience.css',import.meta.url),'utf8');
-test('Time flow handles forward, stopped and reverse values',()=>{assert.equal(flowLabel(1),'時間流動');assert.equal(flowLabel(0),'時間凝止');assert.equal(flowLabel(-1),'時間倒流');assert.equal(clamp(3,-1,1),1);assert.equal(clamp(-5,-1,1),-1);});
-test('Resolution is bounded for high DPI desktops and mobile',()=>{assert.ok(renderScale(3840,2160,3)<=Math.sqrt(2200000/(3840*2160)));assert.equal(renderScale(390,605,3,true),1);assert.equal(renderScale(900,930,3),1.6);});
-test('Deterministic geometry remains finite',()=>{const a=seededRandom(10),b=seededRandom(10);for(let i=0;i<100;i++){assert.equal(a(),b());const p=particlePosition(3,i,.5);assert.ok(p.every(Number.isFinite));assert.ok(Math.abs(p[0]**2+p[2]**2-9)<1e-10);}});
-test('Accessible controls and biography coexist without a canvas dependency',()=>{for(const id of ['time-canvas','time-flow','time-pause','time-rebirth','time-reset','time-quality','time-touch-start','time-status'])assert.ok(html.includes(`id="${id}"`));assert.ok(html.includes('aria-live="polite"'));assert.ok(html.includes('tabindex="0"'));assert.ok(html.includes('專業資格與學歷'));assert.ok(html.includes('STEM 陀螺'));});
-test('Rendering is lazy, stops offscreen, handles loss and reduced motion',()=>{for(const item of ['IntersectionObserver','document.hidden','webglcontextlost','prefers-reduced-motion','ResizeObserver','requestAnimationFrame','cancelAnimationFrame','renderer.dispose()'])assert.ok(js.includes(item),item);assert.ok(css.includes('pan-y'));assert.ok(js.includes("canvas.style.touchAction=activeTouch?'none':'pan-y'"));});
-test('Three.js is vendored locally, licensed, with no runtime third party APIs',()=>{assert.ok(js.includes("import('./assets/vendor/three.module.js')"));assert.ok(!js.includes('fetch('));assert.ok(readFileSync(new URL('../assets/vendor/three.LICENSE',import.meta.url),'utf8').includes('MIT License'));});
-test('Intro uses distinct desktop and narrow-screen layouts',()=>{assert.ok(css.includes('@media(max-width:720px)'));assert.ok(css.includes('grid-template-columns:minmax(0,1fr)'));assert.ok(css.includes('font-size:16px;line-height:1.95'));assert.ok(css.includes('.time-studio .studio-qualifications ul'));});
-test('Gallery blends into About without obscuring text or input',()=>{assert.match(html,/<div class="worlds-time-transition" aria-hidden="true"><\/div>\s*<section class="studio/);assert.ok(css.includes('#f5f2e9 0%'));assert.ok(css.includes('#090c10 100%'));assert.ok(css.includes('.worlds-time-transition{height:110px}'));assert.match(css,/\.worlds-time-transition\{[^}]*pointer-events:none/);});
+import {readFileSync,existsSync} from 'node:fs';
+const base=existsSync(new URL('../dist/index.html',import.meta.url))?'../dist/':'../';
+const THREE=await import(new URL(`${base}assets/vendor/three.module.js`,import.meta.url));
+const {createWorldScene}=await import(new URL(`${base}world-scene.mjs`,import.meta.url));
+const {BEACONS,newJourney,activateBeacon,frameDelta,renderScale,isTap,beaconAnchors,flowLabel,dawnAmount}=await import(new URL(`${base}world-model.mjs`,import.meta.url));
 
-test('GPU effects and reset avoid cross-driver visual artifacts',()=>{assert.ok(!js.includes('pow(sin('));assert.ok(js.includes('twinkle*twinkle'));assert.ok(js.includes('hands.position.z=1.38'));assert.ok(js.includes('clamp(intensity,0.,1.)'));assert.ok(js.includes('controls.enableDamping = false; controls.update(); controls.enableDamping = damping'));});
-
-test('Header keeps the exact confirmed Instagram destination',()=>{assert.match(html,/<a class="social-icon" href="https:\/\/www\.instagram\.com\/\_\_ansonw\_\_\/"[^>]+aria-label="Instagram @\_\_ansonw\_\_">/);const header=html.split('</header>')[0];assert.ok(header.indexOf('aria-label="YouTube 頻道"')<header.indexOf('aria-label="Instagram'));assert.ok(header.indexOf('aria-label="Instagram')<header.indexOf('class="header-cta"'));});
+test('Only three unique world markers can complete a journey; duplicates cannot skip progress',()=>{
+  let state=newJourney();assert.equal(activateBeacon(state,'unknown'),state);
+  state=activateBeacon(state,'education');state=activateBeacon(state,'education');assert.equal(state.count,1);assert.equal(state.complete,false);
+  state=activateBeacon(state,'creativity');assert.equal(state.count,2);assert.equal(state.complete,false);
+  state=activateBeacon(state,'technology');assert.deepEqual(state,{mask:7,count:3,selected:'technology',complete:true});
+  assert.equal(activateBeacon(state,'technology').count,3);assert.deepEqual(newJourney(),{mask:0,count:0,selected:null,complete:false});
+});
+test('All discovery orders complete consistently and leave previous states immutable',()=>{
+  for(const order of [['education','technology','creativity'],['education','creativity','technology'],['technology','education','creativity'],['technology','creativity','education'],['creativity','education','technology'],['creativity','technology','education']]){
+    const start=newJourney();let state=start;for(const id of order)state=activateBeacon(state,id);assert.equal(state.count,3);assert.equal(state.complete,true);assert.equal(start.mask,0);
+  }
+});
+test('The void cannot ignite before all three beacons, and replay immediately restores the black hole',()=>{
+  for(const mask of [0,1,2,3,4,5,6])assert.equal(dawnAmount(1,mask),0);
+  assert.equal(dawnAmount(.5,7),0);assert.ok(dawnAmount(.8,7)>0&&dawnAmount(.8,7)<1);assert.equal(dawnAmount(1,7),1);assert.equal(dawnAmount(2,7),1);assert.equal(dawnAmount(-1,7),0);assert.equal(dawnAmount(1,newJourney().mask),0);
+});
+test('Hidden-tab gaps and clock anomalies cannot cause an animation jump',()=>{assert.equal(frameDelta(10000),.05);assert.equal(frameDelta(-30),0);assert.equal(frameDelta(NaN),0);assert.equal(frameDelta(16),.016);assert.equal(flowLabel(0),'星流凝止');assert.equal(flowLabel(-.5),'星流逆行');});
+test('Framebuffer resolution is capped for high DPI and very large viewports',()=>{for(const [w,h,dpr] of [[390,810,3],[1440,900,2],[3840,2160,3]]){const scale=renderScale(w,h,dpr);assert.ok(w*h*scale*scale<=1900001);assert.ok(scale<=1.45);}assert.equal(renderScale(390,810,3,true),1);});
+test('Drag releases do not activate a marker; small taps remain accessible',()=>{assert.equal(isTap(null,{x:0,y:0}),false);assert.equal(isTap({x:10,y:10},{x:14,y:13}),true);assert.equal(isTap({x:10,y:10},{x:40,y:35}),false);});
+test('Screen markers keep usable hit positions when multiple world coordinates align',()=>{
+  const anchors=beaconAnchors([{x:0,y:0,z:.3},{x:0,y:0,z:.3},{x:4,y:-4,z:2}],390,810);assert.notEqual(anchors[0].y,anchors[1].y);assert.equal(anchors[2].visible,false);for(const a of anchors){assert.ok(a.x>=60&&a.x<=330);assert.ok(a.y>=205&&a.y<=620);}
+});
+test('The actual procedural scene has valid geometry and all three raycast targets',()=>{
+  const world=createWorldScene(THREE,new THREE.PerspectiveCamera());assert.equal(world.beacons.length,3);assert.deepEqual(world.pickTargets.map(m=>m.userData.beaconId),BEACONS.map(b=>b.id));
+  for(const [time,mask] of [[-120,0],[0,1],[10000,7]]){world.update(time,mask===7?1:0,.4,.016,mask);world.scene.updateMatrixWorld();world.scene.traverse(o=>{
+    assert.ok(o.position.toArray().every(Number.isFinite));if(o.geometry){const p=o.geometry.getAttribute('position');assert.ok([...p.array].every(Number.isFinite));if(o.geometry.index)assert.ok([...o.geometry.index.array].every(i=>i<p.count));}
+  });}
+  world.quality(true,1);world.dispose();
+});
+test('All three physical beacons are in view and raycastable on initial desktop and mobile cameras',()=>{
+  for(const [aspect,position] of [[1440/812,[1.5,6.9,18]],[375/810,[1,7.4,24]]]){
+    const camera=new THREE.PerspectiveCamera(43,aspect,.15,160);camera.position.set(...position);camera.lookAt(0,1.2,-1.8);camera.updateMatrixWorld();
+    const world=createWorldScene(THREE,camera);world.scene.updateMatrixWorld();const ray=new THREE.Raycaster();
+    for(const target of world.pickTargets){const point=target.getWorldPosition(new THREE.Vector3()).project(camera);assert.ok(Math.abs(point.x)<1&&Math.abs(point.y)<1&&point.z<1);ray.setFromCamera(new THREE.Vector2(point.x,point.y),camera);assert.ok(ray.intersectObjects(world.pickTargets,false).some(hit=>hit.object===target));}
+    world.dispose();
+  }
+});
+test('World title and accessible biography are readable without executing WebGL',()=>{
+  const html=readFileSync(new URL(`${base}index.html`,import.meta.url),'utf8');assert.ok(html.includes('世界的盡頭'));assert.ok(!html.includes('時間的盡頭'));assert.ok(html.includes('id="studio-profile"'));assert.ok(html.includes('專業資格與學歷'));assert.ok(html.includes('STEM 陀螺'));
+  for(const b of BEACONS)assert.ok(html.includes(`aria-label="喚醒${b.name}界標"`));assert.ok(html.includes('role="status" aria-live="polite"'));assert.ok(!html.includes('ANSON WONG'));
+});

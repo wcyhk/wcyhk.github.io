@@ -21,7 +21,7 @@ test('About has one section heading, four subsections and readable lists', () =>
 test('About retains approved qualifications, WCY artwork and existing social destinations', () => {
   for (const phrase of ['香港教育大學學位教師教育文憑（PGDE），主修設計與科技','Coventry University BSc (Hons) Computing','香港專業教育學院流動應用程式開發高級文憑','Apple Teacher','Microsoft Azure AI Fundamentals（AI-900）']) assert.ok(words.includes(phrase.replace(/\s/g, '')), phrase);
   assert.ok(about.includes('time-canvas'));
-  assert.ok(about.includes('時間的盡頭'));
+  assert.ok(about.includes('世界的盡頭'));
   assert.ok(about.includes('https://github.com/wcyhk'));
   assert.ok(about.includes('https://www.youtube.com/@wcy_hk'));
   assert.ok(!about.includes('mailto:'));
