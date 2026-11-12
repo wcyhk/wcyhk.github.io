@@ -145,3 +145,13 @@
 
 /* Keep the new game’s hero visible in portrait cards. */
 .project-card[data-project="meow"] .poster img{object-position:center;transform-origin:center}
+
+/* Meow's cinematic artwork is always shown whole, never cover-cropped. */
+.spotlight-art-wrap>img[src*="meow-poster-v3.webp"]{object-fit:contain;object-position:center;width:58%;height:100%;left:1%;right:auto}
+.project-card[data-project="meow"] .poster img{object-fit:contain;object-position:center top;transform:none!important}
+.dialog-art img[src*="meow-poster-v3.webp"]{object-fit:contain;object-position:center}
+@media(max-width:720px){
+ .spotlight-art-wrap>img[src*="meow-poster-v3.webp"]{left:0;width:100%;height:355px;object-position:center}
+ .dialog-art:has(img[src*="meow-poster-v3.webp"]){height:auto;min-height:0;aspect-ratio:3/2}
+ .dialog-art img[src*="meow-poster-v3.webp"]{position:relative;height:auto;aspect-ratio:3/2}
+}
