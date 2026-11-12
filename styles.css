@@ -144,4 +144,4 @@
 @media(max-width:720px){.header-actions{gap:6px}.header-actions .social-icon{width:40px;height:44px}.header-actions .social-icon svg{width:18px}}
 
 /* Keep the new game’s hero visible in portrait cards. */
-.project-card[data-project="meow"] .poster img{object-position:78% center;transform-origin:78% center}
+.project-card[data-project="meow"] .poster img{object-position:center;transform-origin:center}

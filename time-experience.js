@@ -89,7 +89,7 @@ if(root){
       function frame(now){
         raf=0;if(!visible||document.hidden||failed||disposed)return;
         const dt=frameDelta(now-last);last=now;time+=dt*speed;spinElapsed=advanceSpin(spinElapsed,dt,motion.matches);pulse=Math.max(0,pulse-dt*.62);energy+=(journey.count/3-energy)*(1-Math.exp(-dt*1.8));
-        siegeElapsed=advanceSiege(siegeElapsed,dt,storyVisible,journey.complete);
+        siegeElapsed=advanceSiege(siegeElapsed,dt,storyVisible&&!motion.matches,journey.complete);
         const rescue=resolveSiege(journey,world.destruction.altarThreat?SIEGE_DURATION:siegeElapsed);
         if(rescue.automatic){journey=rescue.journey;root.dataset.awakening='automatic';updateJourney();announce('暗影逼近祭壇，守護機制已自動喚醒三座界標，釋放聖光。');$('#time-instructions').textContent='守護機制已自動覺醒，祭壇安全。';root.dispatchEvent(new CustomEvent('world-beacon',{detail:{id:null,newLight:true,complete:true,automatic:true}}));}
         if(tween){tween.elapsed+=dt;const keys=tween.keys,index=keys.findIndex((key,i)=>i>0&&tween.elapsed<=key.at),end=index<0?keys.length-1:index,a=keys[end-1],b=keys[end],t=clamp((tween.elapsed-a.at)/(b.at-a.at),0,1),smooth=smootherStep(t);camera.position.lerpVectors(a.position,b.position,smooth);controls.target.lerpVectors(a.target,b.target,smooth);if(tween.elapsed>=REBIRTH_DURATION)tween=null;}
@@ -109,7 +109,7 @@ if(root){
         if(frames===0)root.querySelectorAll('.time-node').forEach(el=>el.disabled=false);
         frames++;root.dataset.frames=String(frames);root.dataset.camera=camera.position.toArray().map(n=>n.toFixed(2)).join(',');root.dataset.worldTime=time.toFixed(3);root.dataset.energy=energy.toFixed(3);root.dataset.drawCalls=String(renderer.info.render.calls);root.dataset.triangles=String(renderer.info.render.triangles);
         const settling=(journey.complete&&rebirthElapsed<REBIRTH_DURATION)||Math.abs(energy-journey.count/3)>.001||world.beacons.some((b,i)=>Math.abs(b.lit-Number(!!(journey.mask&(1<<i))))>.001);
-        const siegeMoving=storyVisible&&!journey.complete&&siegeElapsed<SIEGE_DURATION;
+        const siegeMoving=storyVisible&&!motion.matches&&!journey.complete&&siegeElapsed<SIEGE_DURATION;
         if(!raf&&(speed||pulse>.001||dragging||moving||tween||settling||siegeMoving||!motion.matches))raf=requestAnimationFrame(frame);
       }
       wake=()=>{if(!raf&&visible&&!document.hidden&&!failed&&!disposed){last=performance.now();raf=requestAnimationFrame(frame);}};
@@ -122,7 +122,9 @@ if(root){
       resize();root.dataset.ready='true';quality.setAttribute('aria-pressed',String(light));quality.textContent=light?'◇ 輕量模式':'◇ 標準模式';announce('世界邊界已就緒。拖曳自由探索，點選教育、科技、創作三座界標。');wake();
     }catch(error){console.warn('World experience unavailable:',error.message);fallback('暫時未能啟動 3D 世界，已顯示靜態星圖。個人介紹仍可完整閱讀。');}
   }
-  const observer=new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting);root.dataset.inView=String(visible);if(visible){init();wake();}else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'100px'});
+  const observer=new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting);root.dataset.inView=String(visible);if(visible){init();wake();}else{cancelAnimationFrame(raf);raf=0;}},{rootMargin:'0px',threshold:0});
   const storyObserver=new IntersectionObserver(entries=>{storyVisible=entries.some(e=>e.isIntersecting&&e.intersectionRatio>=.35);root.dataset.storyVisible=String(storyVisible);if(storyVisible)wake();},{threshold:[0,.35]});storyObserver.observe($('.time-exhibit'));
   observer.observe($('.time-exhibit'));
+  // Prepare assets and scene on entry; wake/frame remain gated by actual visibility.
+  init();
 }

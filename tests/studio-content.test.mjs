@@ -12,14 +12,14 @@ test('About preserves the approved positioning and curriculum projects', () => {
 test('About has one section heading, four subsections and readable lists', () => {
   assert.equal((about.match(/<h2\b/g) || []).length, 1);
   assert.equal((about.match(/<h3\b/g) || []).length, 4);
-  assert.equal((about.match(/<li>/g) || []).length, 9);
+  assert.equal((about.match(/<li>/g) || []).length, 8);
   for (const id of ['studio-heading','studio-curriculum','studio-team','studio-work','studio-qualifications']) {
     assert.ok(about.includes(`id="${id}"`));
     assert.ok(about.includes(`aria-labelledby="${id}"`));
   }
 });
 test('About retains approved qualifications, WCY artwork and existing social destinations', () => {
-  for (const phrase of ['香港教育大學學位教師教育文憑（PGDE），主修設計與科技','Coventry University BSc (Hons) Computing','香港專業教育學院流動應用程式開發高級文憑','Apple Teacher','Microsoft Azure AI Fundamentals（AI-900）']) assert.ok(words.includes(phrase.replace(/\s/g, '')), phrase);
+  for (const phrase of ['香港教育大學學位教師教育文憑（PGDE），主修設計與科技','Coventry University BSc (Hons) Computing','Apple Teacher','Microsoft Azure AI Fundamentals（AI-900）']) assert.ok(words.includes(phrase.replace(/\s/g, '')), phrase);
   assert.ok(about.includes('time-canvas'));
   assert.ok(about.includes('世界的盡頭'));
   assert.ok(about.includes('https://github.com/wcyhk'));
@@ -35,3 +35,5 @@ test('New editorial layout is scoped and defines a mobile single-column body', (
   assert.ok(added.includes('font-size:16px;line-height:1.95'));
   assert.ok(added.includes('grid-template-columns:minmax(0,1fr)'));
 });
+
+test('removed qualification stays removed',()=>assert.ok(!html.includes('香港專業教育學院流動應用程式開發高級文憑')));
