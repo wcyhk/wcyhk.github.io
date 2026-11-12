@@ -1,14 +1,14 @@
 export const latestSnapshot = [
   {
-    "name": "wcyhk.github.io",
-    "created_at": "2026-11-02T03:05:12Z",
-    "homepage": "https://wcy.hk/",
+    "name": "meow-revelation",
+    "created_at": "2026-11-11T14:13:13Z",
+    "homepage": null,
     "has_pages": true,
     "private": false,
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "WCY.HK STUDIO 個人作品網站｜集中展示原創遊戲、互動教具與創作工具，連接試用入口、YouTube 影片及 GitHub 程式碼，並保留舊網址轉址。",
+    "description": "貓貓啟示錄｜最後一盞潮燈 · 四章動作 Roguelike 網頁遊戲",
     "language": "JavaScript",
     "owner": {
       "login": "wcyhk"
