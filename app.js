@@ -1,8 +1,8 @@
 import {createSpotlightCarousel} from './carousel.js';
 import {createRepositoryFeed,selectLatestRepositories} from './latest-projects.js';
 import {buildCatalog,countCategories,selectSpotlightProjectIds} from './catalog.js';
-import {latestSnapshot} from './latest-snapshot.js?v=meow-eclipse-20261117';
-import {projects,channel} from './projects.js?v=meow-eclipse-20261117';
+import {latestSnapshot} from './latest-snapshot.js?v=meow-eclipse-full-20261117';
+import {projects,channel} from './projects.js?v=meow-eclipse-full-20261117';
 const $=s=>document.querySelector(s);
 let spotlightCarousel;
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -34,7 +34,7 @@ async function setSpotlight(id){
  previous.classList.toggle('is-visible',fade);
  image.src=p.image;image.alt=p.artAlt||`${p.title}原創動漫概念插圖`;
  const primary=p.url?external(p.url,`${playLabel(p)} <span>↗</span>`,'button button-gold'):p.video?`<button class="button button-gold" data-video="${p.id}">觀看示範 ▷</button>`:external(p.github,'前往專案 <span>↗</span>','button button-gold');
- $('#spotlight-copy').innerHTML=`<span class="spotlight-category">${escapeHTML(p.categoryName)}</span><h3>${escapeHTML(p.title)}</h3><p class="spotlight-en">${escapeHTML(p.english)}</p><p class="spotlight-tagline">${escapeHTML(p.tagline)}</p><p class="spotlight-description">${escapeHTML(p.description)}</p><div class="spotlight-actions">${primary}${p.extraLabel?bonusLink(p,'text-link'):''}<button class="text-link" data-details="${p.id}">了解更多 ＋</button></div>`;
+ $('#spotlight-copy').innerHTML=`<span class="spotlight-category">${escapeHTML(p.categoryName)}</span><h3>${escapeHTML(p.title)}</h3><p class="spotlight-en">${escapeHTML(p.english)}</p><p class="spotlight-tagline">${escapeHTML(p.tagline)}</p><p class="spotlight-description">${escapeHTML(p.description)}</p><div class="spotlight-actions">${primary}<button class="text-link" data-details="${p.id}">了解更多 ＋</button></div>`;
  $('#spotlight').dataset.activeProject=p.id;
  document.querySelectorAll('[data-feature]').forEach(button=>button.classList.toggle('active',button.dataset.feature===p.id));
  if(fade)requestAnimationFrame(()=>requestAnimationFrame(()=>{if(request===spotlightArtworkRequest)previous.classList.remove('is-visible');}));

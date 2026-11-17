@@ -143,14 +143,22 @@
 @media(min-width:721px) and (max-width:950px){.header-actions{gap:8px}.header-actions .header-cta{display:none}.desktop-nav{gap:16px}}
 @media(max-width:720px){.header-actions{gap:6px}.header-actions .social-icon{width:40px;height:44px}.header-actions .social-icon svg{width:18px}}
 
-/* Eclipse: official gameplay art, framed without cutting off the Keeper. */
-.spotlight-art-wrap>img[src$="meow-eclipse-cover.webp"]{object-fit:contain;object-position:center;width:55%;height:100%;left:1%;right:auto}
-.project-card[data-project="meow"] .poster img{object-fit:contain;object-position:center top;transform:none!important}
+/* Eclipse uses the same full-bleed art as the rest of the carousel.
+   Its character is on the right, so the desktop copy sits on the left. */
+.spotlight-art-wrap>img[src$="meow-eclipse-cover.webp"]{object-fit:cover;object-position:right 59%;inset:0;width:100%;height:100%}
+.project-card[data-project="meow"] .poster img{object-fit:cover;object-position:70% 49%}
 .project-card[data-project="meow"] .poster-title h3{font-size:clamp(15px,1.65vw,23px);line-height:1.3}
 .dialog-art:has(img[src$="meow-eclipse-cover.webp"]){min-height:0;height:auto;align-self:start;aspect-ratio:3/2}
-.dialog-art img[src$="meow-eclipse-cover.webp"]{position:relative;height:auto;width:100%;aspect-ratio:3/2;object-fit:contain;object-position:center}
+.dialog-art img[src$="meow-eclipse-cover.webp"]{position:relative;height:auto;width:100%;aspect-ratio:3/2;object-fit:cover;object-position:center}
+@media(min-width:721px){
+ #spotlight[data-active-project="meow"] .spotlight-layout{justify-content:flex-start}
+ #spotlight[data-active-project="meow"] .spotlight-copy{margin-left:0;margin-right:auto}
+ #spotlight[data-active-project="meow"]:before{background:linear-gradient(180deg,#0c1729 0%,#0c172966 10%,transparent 26%,transparent 70%,#0c1729bc 94%,#0c1729 100%),linear-gradient(90deg,#071426ed 0%,#071426bc 28%,#0714262e 53%,transparent 70%)}
+}
 @media(max-width:720px){
- #spotlight[data-active-project="meow"] .spotlight-layout{padding-top:calc(clamp(210px,66.667vw,355px) + 44px)}
- #spotlight[data-active-project="meow"] .spotlight-arrow{top:calc(clamp(210px,66.667vw,355px) + 20px);height:44px}
- .spotlight-art-wrap>img[src$="meow-eclipse-cover.webp"]{left:0;width:100%;height:clamp(210px,66.667vw,355px);object-position:center top}
+ #spotlight[data-active-project="meow"] .spotlight-art-wrap{height:clamp(330px,108vw,525px)}
+ #spotlight[data-active-project="meow"] .spotlight-layout{padding-top:clamp(330px,108vw,525px)}
+ #spotlight[data-active-project="meow"] .spotlight-arrow{top:calc(clamp(330px,108vw,525px) - 34px);height:44px}
+ #spotlight[data-active-project="meow"]:before{background:linear-gradient(180deg,#0c172972,transparent 95px,transparent calc(clamp(330px,108vw,525px) - 105px),#0c1729 clamp(330px,108vw,525px))}
+ .spotlight-art-wrap>img[src$="meow-eclipse-cover.webp"]{object-position:right center}
 }
