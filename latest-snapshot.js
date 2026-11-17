@@ -8,7 +8,7 @@ export const latestSnapshot = [
     "fork": false,
     "archived": false,
     "disabled": false,
-    "description": "貓貓啟示錄｜最後一盞潮燈 · 四章動作 Roguelike 網頁遊戲",
+    "description": "貓貓啟示錄｜緋月之森 · 百層黑暗童話動作冒險",
     "language": "JavaScript",
     "owner": {
       "login": "wcyhk"

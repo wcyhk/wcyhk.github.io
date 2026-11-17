@@ -2,16 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 const base=existsSync(new URL('../dist/styles.css',import.meta.url))?'../dist/':'../';
-const css=readFileSync(new URL(`${base}styles.css`,import.meta.url),'utf8');
+const read=path=>readFileSync(new URL(`${base}${path}`,import.meta.url));
+const css=read('styles.css').toString(),app=read('app.js').toString();
 const {projects}=await import(new URL(`${base}projects.js`,import.meta.url));
-test('Meow uses new cinematic artwork and non-cropping responsive styles',()=>{
- assert.equal(projects.find(p=>p.id==='meow').image,'assets/meow-poster-v3.webp');
- assert.match(css,/img\[src\*="meow-poster-v3.webp"\]\{object-fit:contain/);
- assert.match(css,/data-project="meow"\] \.poster img\{object-fit:contain/);
- assert.match(css,/width:100%;height:355px;object-position:center/);
+const meow=projects.find(p=>p.id==='meow');
+test('Eclipse edition, official title art and both play links are aligned',()=>{
+ assert.equal(meow.title,'貓貓啟示錄｜緋月之森');
+ assert.equal(meow.url,'https://wcy.hk/meow-revelation/eclipse/');
+ assert.equal(meow.extraUrl,'https://wcy.hk/meow-revelation/');
+ assert.match(meow.extraLabel,/最後一盞潮燈/);
+ assert.equal(meow.image,'assets/meow-eclipse-cover.webp');
+ assert.equal(meow.posterImage,'assets/meow-eclipse-portrait.webp');
+ for(const a of [meow.image,meow.posterImage]) assert.equal(read(a).toString('ascii',8,12),'WEBP');
+ assert.match(app,/p.extraLabel\?bonusLink/);
 });
-test('entire 1536x1024 artwork fits desktop and mobile scene/card boxes',()=>{
- for(const [w,h] of [[1920*.58,880],[1440*.58,790],[768*.58,740],[390,355],[320,355],[165,198]]){
-  const scale=Math.min(w/1536,h/1024);assert.ok(1536*scale<=w+.001);assert.ok(1024*scale<=h+.001);
- }
+test('Eclipse artwork uses non-cropping on spotlight, card, detail and poster download',()=>{
+ assert.match(css,/meow-eclipse-cover.webp"\]\{object-fit:contain/);
+ assert.match(css,/data-project="meow"\] \.poster img\{object-fit:contain/);
+ assert.match(css,/aspect-ratio:3\/2;object-fit:contain/);
+ assert.match(app,/Math\.min\(1600\/image.width,1600\/image.height\)/);
 });
